@@ -1,0 +1,87 @@
+{
+  "$defs": {
+    "Entity": {
+      "additionalProperties": false,
+      "description": "The unit the gate correlates on.",
+      "properties": {
+        "src_ip": {
+          "title": "Src Ip",
+          "type": "string"
+        },
+        "dst_ip": {
+          "title": "Dst Ip",
+          "type": "string"
+        }
+      },
+      "required": [
+        "src_ip",
+        "dst_ip"
+      ],
+      "title": "Entity",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "alert_id": {
+      "title": "Alert Id",
+      "type": "string"
+    },
+    "entity": {
+      "$ref": "#/$defs/Entity"
+    },
+    "detection_ids": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 2,
+      "title": "Detection Ids",
+      "type": "array"
+    },
+    "severity": {
+      "enum": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "title": "Severity",
+      "type": "string"
+    },
+    "ts": {
+      "format": "date-time",
+      "title": "Ts",
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "open",
+        "engaged",
+        "closed"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "session_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Session Id"
+    }
+  },
+  "required": [
+    "alert_id",
+    "entity",
+    "detection_ids",
+    "severity",
+    "ts",
+    "status"
+  ],
+  "title": "Alert",
+  "type": "object"
+}

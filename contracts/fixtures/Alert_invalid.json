@@ -1,0 +1,14 @@
+{
+  "alert_id": "a-001",
+  "entity": {
+    "src_ip": "10.0.0.5",
+    "dst_ip": "10.0.0.53"
+  },
+  "detection_ids": [
+    "d-001"
+  ],
+  "severity": "high",
+  "ts": "2026-10-20T10:00:05+00:00",
+  "status": "open",
+  "session_id": null
+}

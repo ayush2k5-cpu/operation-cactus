@@ -1,0 +1,18 @@
+{
+  "detection_id": "d-001",
+  "source": "covertrace",
+  "flow_id": "f-001",
+  "entity": {
+    "src_ip": "10.0.0.5",
+    "dst_ip": "10.0.0.53"
+  },
+  "ts": "2026-10-20T10:00:00+00:00",
+  "score": 0.91,
+  "label": "dns-tunnel",
+  "features": {
+    "entropy": 4.1,
+    "query_count": 42.0,
+    "mean_label_len": 34.0
+  },
+  "threshold_used": 3.5
+}
