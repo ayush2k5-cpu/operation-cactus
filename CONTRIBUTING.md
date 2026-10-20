@@ -12,12 +12,12 @@
 Same names go into `.github/CODEOWNERS` once usernames are known. Ayush reviews every PR during Cycle 1.
 
 ## Flow
-1. Pick a ticket from `tasks/pending/` in your module. Set `## Owner` to your name. Move the file to `tasks/in-progress/` in the same PR as your first commit.
+1. Pick an open issue with your `owner:<name>` label (`gh issue list --label owner:<name> --state open`, or the GitHub Issues tab). Comment "taking this".
 2. Branch from `main`: `dev/<name>-<ticket>` (e.g. `dev/shivansh-dns-entropy`). Git rules: `docs/rules/GitRules.md`.
 3. Commit small, Conventional Commits: `feat: add subdomain entropy function`.
-4. Push and open a PR into `main`. Fill the PR template. Link the ticket file.
-5. One review from another teammate and green CI before merge. Squash merge.
-6. On merge, move the ticket to `tasks/done/` and update the honesty ledger in `docs/specs/GkmkbSpec.md` if a capability changed state.
+4. Push and open a PR into `main`. Fill the PR template. Put `Closes #<issue>` in the body.
+5. One review from another teammate and green CI before merge. Merge with a merge commit (not squash, not rebase), then delete the branch only after the merge.
+6. The merge closes the issue. Update the honesty ledger in `docs/specs/GkmkbSpec.md` if a capability changed state.
 
 ## AI-assisted coding
 AI tools are fine and encouraged. Rules: the PR author can explain every line, tests ship with the code, `AGENTS.md` is followed, and the report discloses AI assistance. No AI attribution anywhere in git (`docs/rules/GitRules.md`).
@@ -34,7 +34,8 @@ AI tools are fine and encouraged. Rules: the PR author can explain every line, t
 
 ## Local checks before a PR
 ```bash
-.venv/bin/python -m ruff check .     # Windows: .\.venv\Scripts\python -m ruff check .
+.venv/bin/python -m ruff check .          # Windows: .\.venv\Scripts\python -m ruff check .
+.venv/bin/python -m ruff format --check . # fix with: ruff format .
 .venv/bin/python -m pytest -q
 cd dashboard && npm run lint && npm run build
 ```

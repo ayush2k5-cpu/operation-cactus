@@ -1,5 +1,5 @@
 ## Ticket
-tasks/<file>.md
+Closes #<issue number>
 
 ## What changed
 

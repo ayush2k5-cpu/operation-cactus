@@ -1,23 +1,26 @@
-# Issue tracker: Local Markdown in `tasks/`
+# Issue tracker: GitHub Issues + Projects
 
-Tickets for this repo are markdown files in `tasks/`. GitHub Issues are not used. Skills that say "publish to the issue tracker" write here.
+Tickets for this repo are GitHub Issues in `ayush2k5-cpu/fyp-untitled`. Use the `gh` CLI. Skills that say "publish to the issue tracker" run `gh issue create`.
 
 ## Conventions
-
-- State is the folder: `tasks/pending/` → `tasks/in-progress/` → `tasks/done/` (or `tasks/failed/` with the reason appended).
-- File name: `PascalCaseTitle-YYYY-MM-DD.md` (creation date).
-- One ticket per file. Never a combined tickets file.
-- Format (headings in this order): `# [GKMKB] Title`, `## What`, `## Why`, `## Acceptance Criteria` (checkboxes), `## Blockers`, `## Agent`, `## Owner`, `## Cycle`, `## Created`. Optional `## Steps` for tickets handed to people who follow instructions.
-- Blocking: list ticket names under `## Blockers`. A ticket is unblocked when each listed ticket is in `tasks/done/`.
-- Comments and conversation append to the bottom under `## Comments`.
-- Cycle (1 to 5) is defined in `docs/specs/GkmkbSpec.md` section 9. The index is `tasks/README.md`.
+- One ticket per issue. Title is a short imperative phrase.
+- Body sections in this order: `**Owner:**` line, `## What`, `## Why`, `## Acceptance Criteria` (checkboxes), `## Blockers` (issue numbers like `#29`, or `None`), optional `## Steps` (numbered, with an "Expected output" line).
+- Labels: exactly one `module:*` (covertrace, flowsight-capture, mimicnet, backend-console, data-eval, workflow), one `cycle-N`, and one or more `owner:*` (ayush, shivansh, bhargav, sharukh, open).
+- Milestone = cycle (`Cycle 1 - Review 2` is due 2026-10-24). Cycles are defined in `docs/specs/GkmkbSpec.md` section 9.
+- State: open or closed. A PR with `Closes #N` in its body closes the ticket on merge.
+- Blocking: list blocker issue numbers under `## Blockers`. A ticket is unblocked when each listed issue is closed.
+- Comments and conversation go in the issue thread.
 
 ## When a skill says "publish to the issue tracker"
-Create a new file in `tasks/pending/` using the format above. Do not use `.scratch/`. Specs live in `docs/specs/`, not in the ticket folders.
+```bash
+gh issue create --repo ayush2k5-cpu/fyp-untitled --title "<title>" --body-file <file> \
+  --label "module:<m>" --label "cycle-<n>" --label "owner:<name>" --milestone "Cycle <n> - ..."
+```
+Create blockers first so later tickets can reference their numbers.
 
 ## When a skill says "fetch the relevant ticket"
-Read the file at the path or name the user gives. Search all four state folders.
+`gh issue view <number>`. Find tickets with `gh issue list --label "owner:<name>" --state open`.
 
 ## Claiming and finishing
-- Claim: set `## Owner` to your name and move the file to `tasks/in-progress/` in your first commit.
-- Finish: move to `tasks/done/` in the merge PR.
+- Claim: comment "taking this" on the issue and branch `dev/<name>-<ticket>`. Assign yourself when your GitHub username is known.
+- Finish: the merging PR says `Closes #N`. Update the honesty ledger if a capability changed state.

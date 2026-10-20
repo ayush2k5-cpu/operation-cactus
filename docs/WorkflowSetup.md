@@ -41,18 +41,18 @@ If the install fails, run `npx skills --help` and check Node is 20 or newer (`no
 ## 4. The loop (everyone)
 Cycle 1 rule: hand the ticket's `## Steps` to your agent **one step at a time**. Then run `/grill-with-docs` → `/to-spec` → `/to-tickets` for your own next-cycle module (your `ModuleSpec...` ticket).
 
-1. **Pick** a ticket in `tasks/pending/` for your name. Read the whole file.
-2. **Claim**: set `## Owner` to your name, move the file to `tasks/in-progress/`, create the branch `dev/<name>-<ticket>`.
+1. **Pick** an open issue with your `owner:<name>` label. Read the whole issue (`gh issue view <n>`).
+2. **Claim**: comment "taking this" on the issue and create the branch `dev/<name>-<ticket>`.
 3. **Clarify** if anything is vague: run `/grill-with-docs` and answer its questions. It updates `GLOSSARY.md` or proposes an ADR when a decision settles. Commit those with your PR.
 4. **Build** with your agent. Tell it: "Work only on this ticket, follow AGENTS.md, write tests first or with the code." Small steps.
 5. **Check** locally: ruff, pytest (and the dashboard lint/build if you touched it). See `CONTRIBUTING.md`.
 6. **Explain**: read your own diff. If you cannot explain a line, ask the agent to explain it or rewrite it simpler.
 7. **PR**: run `/pr` to draft the body, fill `.github/PULL_REQUEST_TEMPLATE.md`, link the ticket, update the honesty ledger if a capability changed state (Designed, Partial, Working).
-8. **Review**: another teammate reads the diff and runs the tests. Ayush reviews every PR in Cycle 1. Squash merge after green CI.
-9. **Finish**: move the ticket to `tasks/done/` in the merge PR.
+8. **Review**: another teammate reads the diff and runs the tests. Ayush reviews every PR in Cycle 1. Merge with a merge commit (not squash) after green CI.
+9. **Finish**: the merge PR says `Closes #N`, which closes the issue. Delete the branch after the merge.
 
 ## 5. Role notes
-**Coders (Ayush, Shivansh):** use `/to-spec` for a new feature, then `/to-tickets` to split it. New tickets go to `tasks/pending/` in the repo format. Use `/codebase-design` before changing a module boundary.
+**Coders (Ayush, Shivansh):** use `/to-spec` for a new feature, then `/to-tickets` to split it. New tickets are published as GitHub Issues (`docs/agents/issue-tracker.md`).
 
 **Bhargav and Sharukh:** your tickets have numbered `## Steps`. Give the whole ticket to your agent and ask it to do the steps one at a time, showing you the result after each step. Do not skip the "expected output" line at the end of a ticket. If a step is unclear, run `/grill-with-docs` before guessing. Slides and report text must come from the honesty ledger, never from the plan.
 

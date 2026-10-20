@@ -39,4 +39,4 @@ if find . -name 'test_*.py' -not -path './.venv/*' | grep -q .; then .venv/bin/p
 
 echo "Setup done. Activate env:  source .venv/bin/activate"
 echo "Workflow skills (optional, once): see docs/WorkflowSetup.md"
-echo "Next: read CONTRIBUTING.md and pick your ticket in tasks/pending/."
+echo "Next: read CONTRIBUTING.md and open your issues (label owner:<name>) on GitHub."
