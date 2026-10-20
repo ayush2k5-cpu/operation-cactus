@@ -41,7 +41,7 @@ cd dashboard && npm run lint && npm run build
 
 ## Repo setup for Ayush (one time)
 ```bash
-gh repo create gkmkb --private --source . --remote origin --push
-gh api -X PUT repos/<owner>/gkmkb/collaborators/<username> -f permission=push   # per teammate
+gh repo create ayush2k5-cpu/fyp-untitled --private --source . --remote origin --push
+gh api -X PUT repos/ayush2k5-cpu/fyp-untitled/collaborators/<username> -f permission=push   # per teammate
 ```
 Then in GitHub Settings > Branches: protect `main` (require PR, 1 approval, status checks, no force push).

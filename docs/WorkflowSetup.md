@@ -8,8 +8,8 @@ Goal: all four of us plan, build and review the same way, even though only Ayush
 - Node.js (installed by the setup script).
 
 ## 2. Open the tool in the repo
-Open the `gkmkb` folder as your workspace.
-- Claude Code: `cd gkmkb` then `claude`. `CLAUDE.md` imports `AGENTS.md`.
+Open the repo folder as your workspace.
+- Claude Code: `cd fyp-untitled` then `claude`. `CLAUDE.md` imports `AGENTS.md`.
 - Antigravity: open the folder. It reads `AGENTS.md`.
 
 Check: ask the agent "What are the GKMKB glossary terms for a covert-channel verdict and the thing the gate raises?" It should answer Detection and Alert. If not, tell the agent to read `AGENTS.md` first.

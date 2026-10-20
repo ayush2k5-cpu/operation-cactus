@@ -1,5 +1,7 @@
 # GKMKB — Guarded Kill-chain Monitoring & Key Breach
 
+> Repo name `fyp-untitled` is a placeholder. The final-year project is untitled; GKMKB is the Phase-II working title and will be renamed when the team decides.
+
 Detection middleware: a headless engine with a CLI (`gkmkb replay <pcap>`) and a thin web console. Replayed traffic goes through two independent detectors (FlowSight, CoverTrace). A gate escalates only when both agree. MimicNet traps the attacker in a Docker honeypot and feeds new detection rules back. An analyst dashboard shows it live.
 
 BCY705 Capstone Phase-II, DSATM, B.E. CSE (Cyber Security).
@@ -24,15 +26,15 @@ Ayush adds you as a collaborator. Accept the email invite, or at https://github.
 ### 2. Clone and run setup
 Windows (PowerShell):
 ```powershell
-git clone https://github.com/<owner>/gkmkb.git
-cd gkmkb
+git clone https://github.com/ayush2k5-cpu/fyp-untitled.git
+cd fyp-untitled
 Set-ExecutionPolicy -Scope Process Bypass
 .\scripts\setup.ps1
 ```
 macOS / Linux:
 ```bash
-git clone https://github.com/<owner>/gkmkb.git
-cd gkmkb
+git clone https://github.com/ayush2k5-cpu/fyp-untitled.git
+cd fyp-untitled
 bash scripts/setup.sh
 ```
 The script installs Git, Python 3.12, Node.js LTS, GitHub CLI and Docker Desktop when missing (Windows uses winget). It then creates `.venv`, installs Python and dashboard dependencies, copies `.env.example` to `.env`, pulls Docker images and runs tests. Safe to re-run. Add `-Yes` (Windows) or `--yes` (bash) to skip prompts.
