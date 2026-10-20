@@ -48,7 +48,7 @@ Cycle 1 rule: hand the ticket's `## Steps` to your agent **one step at a time**.
 5. **Check** locally: ruff, pytest (and the dashboard lint/build if you touched it). See `CONTRIBUTING.md`.
 6. **Explain**: read your own diff. If you cannot explain a line, ask the agent to explain it or rewrite it simpler.
 7. **PR**: run `/pr` to draft the body, fill `.github/PULL_REQUEST_TEMPLATE.md`, link the ticket, update the honesty ledger if a capability changed state (Designed, Partial, Working).
-8. **Review**: another teammate reads the diff and runs the tests. Ayush reviews every PR in Cycle 1. Squash merge after green CI.
+8. **Review**: another teammate reads the diff and runs the tests. Ayush reviews every PR in Cycle 1. Merge with a merge commit (not squash) after green CI.
 9. **Finish**: the merge PR says `Closes #N`, which closes the issue. Delete the branch after the merge.
 
 ## 5. Role notes
