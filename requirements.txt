@@ -1,0 +1,10 @@
+fastapi
+uvicorn[standard]
+pydantic>=2
+pymongo
+scapy
+numpy
+scipy
+scikit-learn
+xgboost
+docker

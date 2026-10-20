@@ -1,0 +1,26 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+node_modules/
+dist/
+.env
+data/*
+!data/README.md
+!data/MANIFEST.md
+!data/tools/
+!data/demo/
+!data/test/
+!data/.gitkeep
+*.pcap
+!data/test/*.pcap
+!data/demo/*.pcap
+*.pcapng
+models/*.pkl
+.DS_Store
+
+# Agent skills are installed per developer, never committed
+.agents/
+.claude/skills/
+.claude/settings.local.json
