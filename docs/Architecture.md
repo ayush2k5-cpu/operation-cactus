@@ -35,7 +35,7 @@ contracts/   M4  pydantic models + JSON schemas + fixtures (shared, change by PR
 eval/        M4  metric scripts, Paper 1 baseline
 data/            pcaps and datasets (large files gitignored)
 scripts/         setup, demo
-tasks/           tickets (pending, in-progress, done, failed)
+(tickets live in GitHub Issues)
 ```
 
 ## Boundary rules

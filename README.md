@@ -15,7 +15,7 @@ Status: planning done, code not started (2026-10-20). See the honesty ledger in 
 3. `docs/adr/` — why each big choice
 4. `GLOSSARY.md` — shared words
 5. `CONTRIBUTING.md` — branch and PR flow
-6. `tasks/pending/` — your tickets
+6. GitHub Issues — your tickets (filter by label `owner:<name>`)
 
 ## Quick start (new teammate)
 You need only a Windows, macOS or Linux machine and a GitHub account. You do **not** need Claude, Ojas or any AI tool.
@@ -50,7 +50,7 @@ gh auth login
 Follow `docs/WorkflowSetup.md` once. It installs the shared skills and shows the daily loop.
 
 ### 5. Pick a ticket and start
-Open `tasks/pending/`, take a ticket in your module, put your name in its `Owner` line, move it to `tasks/in-progress/`, branch, code, open a PR. Details in `CONTRIBUTING.md`.
+Open the Issues tab, take an issue with your `owner:<name>` label, comment "taking this", branch, code, open a PR with `Closes #N`. Details in `CONTRIBUTING.md`.
 
 ## Modules
 | Module | Folder | What |
@@ -60,7 +60,7 @@ Open `tasks/pending/`, take a ticket in your module, put your name in its `Owner
 | M3 MimicNet | `mimicnet/` | Docker honeypot, MITRE map, rule generation |
 | M4 Backend + Dashboard | `backend/`, `dashboard/`, `contracts/`, `eval/` | API, gate, UI, demo, CI |
 
-Owners are listed in `CONTRIBUTING.md`. Ticket order and cycles: `tasks/README.md`. Next milestone: Review 2 on 2026-10-24 (engine slice).
+Owners are listed in `CONTRIBUTING.md`. Tickets and cycles: GitHub Issues and milestones. Next milestone: Review 2 on 2026-10-24 (engine slice).
 
 ## Ethics
 All demo and evaluation traffic is replayed from datasets or generated in an isolated lab on team-owned machines with consent. Never capture or test against anyone's real traffic or systems.

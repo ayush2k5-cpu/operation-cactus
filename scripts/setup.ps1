@@ -79,4 +79,4 @@ if ($hasTests) { & $py -m pytest -q } else { Write-Host "[skip] no tests yet" }
 Write-Host ""
 Write-Host "Setup done. Activate env:  .\.venv\Scripts\Activate.ps1"
 Write-Host "Workflow skills (optional, once): see docs\WorkflowSetup.md"
-Write-Host "Next: read CONTRIBUTING.md and pick your ticket in tasks/pending/."
+Write-Host "Next: read CONTRIBUTING.md and open your issues (label owner:<name>) on GitHub."
