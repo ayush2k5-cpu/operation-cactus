@@ -16,7 +16,7 @@ Same names go into `.github/CODEOWNERS` once usernames are known. Ayush reviews 
 2. Branch from `main`: `dev/<name>-<ticket>` (e.g. `dev/shivansh-dns-entropy`). Git rules: `docs/rules/GitRules.md`.
 3. Commit small, Conventional Commits: `feat: add subdomain entropy function`.
 4. Push and open a PR into `main`. Fill the PR template. Put `Closes #<issue>` in the body.
-5. One review from another teammate and green CI before merge. Squash merge, then delete the branch (only after the merge).
+5. One review from another teammate and green CI before merge. Merge with a merge commit (not squash, not rebase), then delete the branch only after the merge.
 6. The merge closes the issue. Update the honesty ledger in `docs/specs/GkmkbSpec.md` if a capability changed state.
 
 ## AI-assisted coding
