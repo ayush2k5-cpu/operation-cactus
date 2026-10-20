@@ -1,0 +1,85 @@
+{
+  "$defs": {
+    "Entity": {
+      "additionalProperties": false,
+      "description": "The unit the gate correlates on.",
+      "properties": {
+        "src_ip": {
+          "title": "Src Ip",
+          "type": "string"
+        },
+        "dst_ip": {
+          "title": "Dst Ip",
+          "type": "string"
+        }
+      },
+      "required": [
+        "src_ip",
+        "dst_ip"
+      ],
+      "title": "Entity",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "detection_id": {
+      "title": "Detection Id",
+      "type": "string"
+    },
+    "source": {
+      "enum": [
+        "flowsight",
+        "covertrace"
+      ],
+      "title": "Source",
+      "type": "string"
+    },
+    "flow_id": {
+      "title": "Flow Id",
+      "type": "string"
+    },
+    "entity": {
+      "$ref": "#/$defs/Entity"
+    },
+    "ts": {
+      "format": "date-time",
+      "title": "Ts",
+      "type": "string"
+    },
+    "score": {
+      "maximum": 1.0,
+      "minimum": 0.0,
+      "title": "Score",
+      "type": "number"
+    },
+    "label": {
+      "title": "Label",
+      "type": "string"
+    },
+    "features": {
+      "additionalProperties": {
+        "type": "number"
+      },
+      "default": {},
+      "title": "Features",
+      "type": "object"
+    },
+    "threshold_used": {
+      "title": "Threshold Used",
+      "type": "number"
+    }
+  },
+  "required": [
+    "detection_id",
+    "source",
+    "flow_id",
+    "entity",
+    "ts",
+    "score",
+    "label",
+    "threshold_used"
+  ],
+  "title": "Detection",
+  "type": "object"
+}

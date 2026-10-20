@@ -1,0 +1,154 @@
+{
+  "$defs": {
+    "DnsQuery": {
+      "additionalProperties": false,
+      "properties": {
+        "ts": {
+          "format": "date-time",
+          "title": "Ts",
+          "type": "string"
+        },
+        "qname": {
+          "title": "Qname",
+          "type": "string"
+        },
+        "qtype": {
+          "title": "Qtype",
+          "type": "string"
+        }
+      },
+      "required": [
+        "ts",
+        "qname",
+        "qtype"
+      ],
+      "title": "DnsQuery",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "flow_id": {
+      "title": "Flow Id",
+      "type": "string"
+    },
+    "src_ip": {
+      "title": "Src Ip",
+      "type": "string"
+    },
+    "dst_ip": {
+      "title": "Dst Ip",
+      "type": "string"
+    },
+    "src_port": {
+      "anyOf": [
+        {
+          "maximum": 65535,
+          "minimum": 0,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Src Port"
+    },
+    "dst_port": {
+      "anyOf": [
+        {
+          "maximum": 65535,
+          "minimum": 0,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Dst Port"
+    },
+    "proto": {
+      "enum": [
+        "tcp",
+        "udp",
+        "icmp"
+      ],
+      "title": "Proto",
+      "type": "string"
+    },
+    "start_ts": {
+      "format": "date-time",
+      "title": "Start Ts",
+      "type": "string"
+    },
+    "end_ts": {
+      "format": "date-time",
+      "title": "End Ts",
+      "type": "string"
+    },
+    "pkt_count": {
+      "minimum": 0,
+      "title": "Pkt Count",
+      "type": "integer"
+    },
+    "byte_count": {
+      "minimum": 0,
+      "title": "Byte Count",
+      "type": "integer"
+    },
+    "pkt_sizes": {
+      "default": [],
+      "items": {
+        "type": "integer"
+      },
+      "title": "Pkt Sizes",
+      "type": "array"
+    },
+    "iat_ms": {
+      "default": [],
+      "items": {
+        "type": "number"
+      },
+      "title": "Iat Ms",
+      "type": "array"
+    },
+    "dns_queries": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/DnsQuery"
+      },
+      "title": "Dns Queries",
+      "type": "array"
+    },
+    "icmp_ts": {
+      "default": [],
+      "items": {
+        "format": "date-time",
+        "type": "string"
+      },
+      "title": "Icmp Ts",
+      "type": "array"
+    },
+    "http_header_names": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Http Header Names",
+      "type": "array"
+    }
+  },
+  "required": [
+    "flow_id",
+    "src_ip",
+    "dst_ip",
+    "proto",
+    "start_ts",
+    "end_ts",
+    "pkt_count",
+    "byte_count"
+  ],
+  "title": "FlowRecord",
+  "type": "object"
+}

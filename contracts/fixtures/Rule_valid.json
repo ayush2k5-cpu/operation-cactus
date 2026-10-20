@@ -1,0 +1,10 @@
+{
+  "rule_id": "r-001",
+  "target": "covertrace",
+  "type": "ioc",
+  "match": {
+    "qname_suffix": "t.example.test"
+  },
+  "session_id": "s-001",
+  "status": "proposed"
+}

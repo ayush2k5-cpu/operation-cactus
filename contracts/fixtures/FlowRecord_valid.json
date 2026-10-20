@@ -1,0 +1,28 @@
+{
+  "flow_id": "f-001",
+  "src_ip": "10.0.0.5",
+  "dst_ip": "10.0.0.53",
+  "src_port": 51234,
+  "dst_port": 53,
+  "proto": "udp",
+  "start_ts": "2026-10-20T10:00:00+00:00",
+  "end_ts": "2026-10-20T10:00:05+00:00",
+  "pkt_count": 2,
+  "byte_count": 180,
+  "pkt_sizes": [
+    90,
+    90
+  ],
+  "iat_ms": [
+    12.5
+  ],
+  "dns_queries": [
+    {
+      "ts": "2026-10-20T10:00:00+00:00",
+      "qname": "mfrggzdfmztwq2lknnwg23tpoi.t.example.test",
+      "qtype": "A"
+    }
+  ],
+  "icmp_ts": [],
+  "http_header_names": []
+}

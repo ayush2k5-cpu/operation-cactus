@@ -1,0 +1,63 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "rule_id": {
+      "title": "Rule Id",
+      "type": "string"
+    },
+    "target": {
+      "enum": [
+        "flowsight",
+        "covertrace"
+      ],
+      "title": "Target",
+      "type": "string"
+    },
+    "type": {
+      "enum": [
+        "ioc",
+        "threshold"
+      ],
+      "title": "Type",
+      "type": "string"
+    },
+    "match": {
+      "additionalProperties": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "number"
+          }
+        ]
+      },
+      "title": "Match",
+      "type": "object"
+    },
+    "session_id": {
+      "title": "Session Id",
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "proposed",
+        "approved",
+        "active",
+        "rejected"
+      ],
+      "title": "Status",
+      "type": "string"
+    }
+  },
+  "required": [
+    "rule_id",
+    "target",
+    "type",
+    "match",
+    "session_id",
+    "status"
+  ],
+  "title": "Rule",
+  "type": "object"
+}

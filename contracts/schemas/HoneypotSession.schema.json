@@ -1,0 +1,118 @@
+{
+  "$defs": {
+    "MitreTag": {
+      "additionalProperties": false,
+      "properties": {
+        "technique_id": {
+          "title": "Technique Id",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "evidence": {
+          "title": "Evidence",
+          "type": "string"
+        }
+      },
+      "required": [
+        "technique_id",
+        "name",
+        "evidence"
+      ],
+      "title": "MitreTag",
+      "type": "object"
+    },
+    "SessionEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "ts": {
+          "format": "date-time",
+          "title": "Ts",
+          "type": "string"
+        },
+        "type": {
+          "title": "Type",
+          "type": "string"
+        },
+        "data": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "default": {},
+          "title": "Data",
+          "type": "object"
+        }
+      },
+      "required": [
+        "ts",
+        "type"
+      ],
+      "title": "SessionEvent",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "session_id": {
+      "title": "Session Id",
+      "type": "string"
+    },
+    "alert_id": {
+      "title": "Alert Id",
+      "type": "string"
+    },
+    "service": {
+      "title": "Service",
+      "type": "string"
+    },
+    "container_id": {
+      "title": "Container Id",
+      "type": "string"
+    },
+    "started": {
+      "format": "date-time",
+      "title": "Started",
+      "type": "string"
+    },
+    "ended": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Ended"
+    },
+    "events": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/SessionEvent"
+      },
+      "title": "Events",
+      "type": "array"
+    },
+    "mitre": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/MitreTag"
+      },
+      "title": "Mitre",
+      "type": "array"
+    }
+  },
+  "required": [
+    "session_id",
+    "alert_id",
+    "service",
+    "container_id",
+    "started"
+  ],
+  "title": "HoneypotSession",
+  "type": "object"
+}
