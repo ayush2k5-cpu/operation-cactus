@@ -38,3 +38,7 @@ Ayush
 8. Open a first PR from `dev/ayush-repo-skeleton` and confirm CI turns green.
 
 Expected output: private repo, three collaborators, green CI on a PR, `main` protected.
+
+## Completion Notes (2026-10-20)
+- Done: private repo, CI (ruff, pytest, dashboard build when present), pyproject, CODEOWNERS with placeholders, PR 1 merged.
+- Not done: branch protection (GitHub blocks it on private free repos; needs Pro or a public repo) and adding collaborators (Ayush adds by email in GitHub Settings). Until protection exists, the rule "never push to main, PR with one review" is by convention.
