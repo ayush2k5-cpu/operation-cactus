@@ -47,7 +47,7 @@ Cycle 1 rule: hand the ticket's `## Steps` to your agent **one step at a time**.
 4. **Build** with your agent. Tell it: "Work only on this ticket, follow AGENTS.md, write tests first or with the code." Small steps.
 5. **Explain**: read your own diff. If you cannot explain a line, ask the agent to explain it or rewrite it simpler.
 6. **Submit**: `python scripts/ticket.py submit <n>`. It runs ruff and pytest, pushes, and opens a PR into your module branch. Use `/pr` if you want a better PR body.
-7. **Merge**: when CI is green, merge your PR into the module branch with a merge commit. Delete your ticket branch after the merge.
+7. **Merge**: when CI is green, merge your PR into the module branch with a merge commit. Do not delete your branch; cleanup is done by Ayush on request.
 8. **Release**: Ayush merges the module branch into `main` and the issue closes then.
 
 ## 5. Role notes
