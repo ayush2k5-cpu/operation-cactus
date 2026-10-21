@@ -6,11 +6,11 @@
 ## Identity
 GKMKB — Guarded Kill-chain Monitoring & Key Breach (formerly Operation Cactus / SENTINEL).
 Course: BCY705 Capstone Phase-II, DSATM, B.E. CSE (Cyber Security).
-Team: Ayush Rathod, Sharukh Khan, Shivansh Tripathi, Bhargav Moray. Guides on the paper: Gerard Deepak, Shalini Ranjan.
+Team: Ayush Rathod, Sharukh Khan, Shivansh Tripathi, Bhargav Moray.
 
 ## Source Material
-- `memory/handoffs/` Genesis handoff and `C:\Users\ayush\Downloads\operationCactusHandoff.md` (chat session decisions).
-- `GKMKB_Phase2_Project_Description.md`, `GKMKB_Architecture_Methodology.md` (Downloads).
+- The lead's planning notes and the earlier chat-session handoff (decisions behind the specs, kept outside this repo).
+- `GKMKB_Phase2_Project_Description.md` and `GKMKB_Architecture_Methodology.md` (the Phase-II description and architecture write-up, kept outside this repo).
 - `Operation_Cactus_Paper_Final(2).docx` — submitted Paper 1. Detection-layer baseline on 1,000 synthetic records, 8 features (4 FlowSight + 4 CoverTrace). LR 96.0% acc / 0.970 AUC, SVM 95.0%, XGBoost 91.5%. Synthetic only; the paper says so itself.
 - `Operation Cactus/` agent prompts (SENTINEL tactical UI mock: Vite + React + Zustand, dummy data). UI reference only, not a backend.
 

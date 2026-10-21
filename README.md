@@ -65,6 +65,9 @@ Open the Issues tab, take an issue with your `owner:<name>` label, then run `pyt
 
 Owners are listed in `CONTRIBUTING.md`. Tickets and cycles: GitHub Issues and milestones. Next milestone: Review 2 on 2026-10-24 (engine slice).
 
+## License
+All rights reserved for now: the code is public to be viewed and reviewed, not reused (see `LICENSE`). The authors will choose an open license at final submission.
+
 ## Ethics
 All demo and evaluation traffic is replayed from datasets or generated in an isolated lab on team-owned machines with consent. Never capture or test against anyone's real traffic or systems.
 

@@ -117,7 +117,7 @@ Large files are gitignored and fetched by script. One line per dataset (name, li
 
 **Secrets and personal data.** No secrets in git. Captures are checked for personal data (hostnames, queried domains, IPs) before any pcap is committed or put on a slide; anything personal is removed or the pcap stays out of the repo.
 
-**Legal.** Dual-use tunnelling tools are run only on infrastructure the team owns, inside the lab, for defensive evaluation. [Institution ethics clearance, if the university requires it: to be confirmed with the guides, Gerard Deepak and Shalini Ranjan.]
+**Legal.** Dual-use tunnelling tools are run only on infrastructure the team owns, inside the lab, for defensive evaluation. [Institution ethics clearance, if the university requires it: to be confirmed with the project guides.]
 
 ## 7. Limitations
 
