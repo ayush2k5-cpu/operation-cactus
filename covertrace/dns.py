@@ -9,7 +9,7 @@ from collections import defaultdict, deque
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
-from contracts.models import Detection, FlowRecord
+from contracts.models import Detection, Entity, FlowRecord
 from covertrace.entropy import shannon_entropy
 
 
@@ -59,7 +59,7 @@ class DnsEntropyDetector:
             detection_id=f"covertrace-{self._count:04d}",
             source="covertrace",
             flow_id=flow.flow_id,
-            entity={"src_ip": flow.src_ip, "dst_ip": flow.dst_ip},
+            entity=Entity(src_ip=flow.src_ip, dst_ip=flow.dst_ip),
             ts=newest,
             score=min(1.0, 0.5 + 0.5 * excess),
             label="dns-high-entropy",
