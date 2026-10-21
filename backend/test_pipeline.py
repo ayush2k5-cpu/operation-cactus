@@ -69,7 +69,7 @@ def test_tunnel_raises_one_alert_and_benign_none(tunnel_and_benign):
 
 def test_entropy_without_cadence_is_single_signal(tmp_path):
     path = build(
-        tmp_path / "irregular.pcap", [("10.0.0.7", tunnel_labels(20), [1.0, 9.0, 3.0, 14.0])]
+        tmp_path / "irregular.pcap", [("10.0.0.7", tunnel_labels(40), [0.5, 2.5, 0.2, 3.0])]
     )
     result = run(path)
     assert [d.source for d in result.detections] == ["covertrace"]
@@ -97,3 +97,14 @@ def test_cli_prints_zero_alerts_for_empty_pcap(tmp_path, capsys):
     assert main(["replay", str(empty)]) == 0
     out = capsys.readouterr().out
     assert "alerts: 0" in out
+
+
+DEMO = "data/demo/dns_tunnel_plus_benign.pcap"
+CONTROL = "data/demo/single_signal_control.pcap"
+
+
+@pytest.mark.skipif(not __import__("os").path.exists(DEMO), reason="demo pcaps not generated")
+def test_demo_pcap_raises_one_alert_on_the_tunnel_entity():
+    result = run(DEMO)
+    assert [a.entity.src_ip for a in result.alerts] == ["10.0.2.20"]
+    assert run(CONTROL).alerts == []
