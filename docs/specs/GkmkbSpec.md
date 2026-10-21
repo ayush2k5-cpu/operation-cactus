@@ -56,19 +56,19 @@ Rule `match` examples: `{"qname_suffix": "t.evil.example"}`, `{"src_ip": "10.0.0
 
 ## 5. Interfaces
 - Detectors are plain Python libraries called in-process by the backend (ADR 0002). No inter-service network between detectors on one host.
-- REST (FastAPI), built in the backend spec: health check, start a replay (returns `replay_id`), list Detections, list Alerts, close an Alert, list replays. List endpoints return newest first with an optional replay filter and a limit. The pcap name must resolve inside the data folder. Later, with MimicNet: `GET /api/sessions/{id}`, `GET /api/rules`, `POST /api/rules/{id}/approve`, `POST /api/rules/{id}/reject`.
+- REST (FastAPI), built in the backend spec: health check, start a replay (returns `replay_id`), list Detections, list Alerts, close an Alert, list replays, list the pcaps in the data folder (for the Console picker). List endpoints return newest first with an optional replay filter and a limit. The pcap name must resolve inside the data folder. Later, with MimicNet: `GET /api/sessions/{id}`, `GET /api/rules`, `POST /api/rules/{id}/approve`, `POST /api/rules/{id}/reject`.
 - WebSocket: one endpoint pushes `{type, replay_id, data}` with types `detection`, `alert`, `replay_done`; `session_event` and `rule` arrive with MimicNet (ADR 0004). A late client reads REST first, then subscribes.
 - Storage: MongoDB collections `detections`, `alerts`, `sessions`, `rules`, `baselines`.
 
 ## 6. Headline demo (acceptance of the whole system)
 0. Headless first: `gkmkb replay data/demo/dns_tunnel_plus_benign.pcap` prints detections, the alert and the rule proposals. The steps below add the dashboard on top.
 1. `scripts/demo.ps1` (or `.sh`) starts the stack and replays `data/demo/dns_tunnel_plus_benign.pcap`.
-2. Dashboard shows benign flows scoring low.
+2. Dashboard shows the replay counts (flows, Detections, Alerts). Benign flows are not listed: detectors emit a Detection only at 0.5 or above, and there is no flows endpoint.
 3. The tunnel flow produces a CoverTrace Detection (entropy over threshold) and a FlowSight Detection for the same entity.
 4. Gate raises one Alert. A single-signal control pcap raises zero Alerts.
 5. MimicNet starts a honeypot container; a scripted attacker session is recorded; MITRE techniques appear.
 6. A proposed Rule appears; analyst approves; replaying the tunnel again is caught earlier or with higher score.
-7. Adaptive threshold shown: same traffic, two baselines, two cutoffs.
+7. Adaptive threshold shown: same traffic, two baselines, two cutoffs. The Console shows this as a threshold compare view of two replays, labelled "from Detections" (`threshold_used` and score), because the Baseline has no endpoint.
 
 ## 7. Evaluation (what the report may claim)
 - CoverTrace: precision, recall, F1, ROC/AUC, false-positive rate on benign DNS, static vs adaptive threshold. Datasets per ADR 0007.
@@ -89,7 +89,7 @@ Rule `match` examples: `{"qname_suffix": "t.evil.example"}`, `{"src_ip": "10.0.0
 | MimicNet honeypot, MITRE mapping | Designed |
 | Fingerprint evasion | Designed |
 | Closed-loop rules | Designed |
-| Dashboard | Designed (UI mock prompts exist) |
+| Dashboard | Designed (spec merged 2026-10-22, tickets #70 to #78; UI mock prompts exist) |
 
 ## 9. Cycles
 Final date not fixed; each cycle ends with something demonstrable.
@@ -114,7 +114,7 @@ Final date not fixed; each cycle ends with something demonstrable.
 | D0 | Product form | **Locked**: middleware + thin web console, CLI first (ADR 0008) |
 | D1 | Capture language | **Locked**: Python replay now; live agent (Rust or C) is a stretch, not claimed until built (ADR 0001) |
 | D2 | Paper 1 fused classifier vs independent detectors | **Locked**: independent detectors + gate; fused model kept in `eval/` as baseline (ADR 0002) |
-| D3 | Dashboard charts | Proposed: React + Recharts (ADR 0004); confirmed in the dashboard spec |
+| D3 | Dashboard charts | **Locked 2026-10-22**: Vite + React + TypeScript + Recharts (ADR 0004, dashboard spec) |
 | D4 | Dashboard transport | **Locked**: WebSocket (ADR 0004) |
 | D5 | Database | **Locked**: MongoDB (ADR 0005) |
 | D6 | Rule generation | Proposed: automated extraction + analyst approval; first cut has two Rule kinds, both for CoverTrace (ADR 0006 addendum) |
