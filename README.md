@@ -7,9 +7,12 @@ Detection middleware: a headless engine with a CLI (`gkmkb replay <pcap>`) and a
 BCY705 Capstone Phase-II, DSATM, B.E. CSE (Cyber Security).
 Team: Ayush Rathod, Sharukh Khan, Shivansh Tripathi, Bhargav Moray.
 
-Status: planning done, code not started (2026-10-20). See the honesty ledger in `docs/specs/GkmkbSpec.md` section 8.
+Status (2026-10-22): the engine foundation is built (contracts, replay, gate, CLI, DNS entropy detector, demo pcaps). Module specs and tickets are written; module work starts in Cycle 2. The honesty ledger is `docs/Ledger.md`.
+
+**New teammate? Start with `docs/Onboarding.md`.**
 
 ## Read first
+0. `docs/Onboarding.md` — what to do and what not to do
 1. `docs/specs/GkmkbSpec.md` — what we build, contracts, demo, milestones
 2. `docs/Architecture.md` — diagram, folders, boundary rules
 3. `docs/adr/` — why each big choice

@@ -33,10 +33,16 @@ if [ -f dashboard/package.json ]; then (cd dashboard && npm install); else echo 
 
 if have docker && [ -f docker-compose.yml ]; then docker compose pull || echo "[warn] docker compose pull failed"; fi
 
+if have git && { [ -z "$(git config --global user.name)" ] || [ -z "$(git config --global user.email)" ]; }; then
+  echo "[todo] Set your git name and email (once):"
+  echo '       git config --global user.name "Your Name"'
+  echo '       git config --global user.email "you@example.com"'
+fi
+
 if have gh && ! gh auth status >/dev/null 2>&1; then echo "[todo] Run: gh auth login"; fi
 
 if find . -name 'test_*.py' -not -path './.venv/*' | grep -q .; then .venv/bin/python -m pytest -q; else echo "[skip] no tests yet"; fi
 
 echo "Setup done. Activate env:  source .venv/bin/activate"
 echo "Workflow skills (optional, once): see docs/WorkflowSetup.md"
-echo "Next: read CONTRIBUTING.md and open your issues (label owner:<name>) on GitHub."
+echo "Next: read docs/Onboarding.md. It tells you exactly what to do and what not to do."
