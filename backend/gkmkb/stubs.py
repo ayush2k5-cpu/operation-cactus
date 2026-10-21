@@ -16,40 +16,45 @@ STUB = "[stub]"
 
 
 class FlowSightStub:
-    """Flags an entity that opens many small flows at an even cadence.
+    """Flags an entity sending many small packets at an even cadence.
 
-    Flow-level statistics alone cannot see a DNS tunnel: every query uses a new source
-    port, so each query is its own one-packet flow. The stub therefore aggregates per
-    entity. The real FlowSight must solve the same problem.
+    Works on packet events, not on flows: a tunnel can be one long flow (fixed source port)
+    or many one-packet flows (new port per query), and the stub must see both. The real
+    FlowSight must handle both too.
     """
 
     def __init__(
         self,
         window_seconds: float = 60.0,
-        min_flows: int = 10,
+        min_packets: int = 10,
         max_mean_size: float = 150.0,
         max_cadence_cv: float = 0.5,
     ):
         self.window = timedelta(seconds=window_seconds)
-        self.min_flows = min_flows
+        self.min_packets = min_packets
         self.max_mean_size = max_mean_size
         self.max_cadence_cv = max_cadence_cv
-        self._recent: dict[tuple[str, str], list[tuple]] = defaultdict(list)
+        self._events: dict[tuple[str, str], list[tuple]] = defaultdict(list)
         self._flagged: set[tuple[str, str]] = set()
         self._count = 0
 
     def analyze(self, flow: FlowRecord) -> Detection | None:
         key = (flow.src_ip, flow.dst_ip)
-        recent = self._recent[key]
-        recent.append((flow.start_ts, flow.byte_count / max(flow.pkt_count, 1)))
-        recent[:] = [(ts, size) for ts, size in recent if flow.start_ts - ts <= self.window]
-        if key in self._flagged or len(recent) < self.min_flows:
+        events = self._events[key]
+        ts = flow.start_ts
+        for i, size in enumerate(flow.pkt_sizes):
+            if i > 0 and i - 1 < len(flow.iat_ms):
+                ts = ts + timedelta(milliseconds=flow.iat_ms[i - 1])
+            events.append((ts, size))
+        events.sort(key=lambda e: e[0])
+        newest = events[-1][0]
+        events[:] = [(t, size) for t, size in events if newest - t <= self.window]
+        if key in self._flagged or len(events) < self.min_packets:
             return None
-        starts = [ts for ts, _ in recent]
-        gaps = [(b - a).total_seconds() for a, b in zip(starts, starts[1:], strict=False)]
+        gaps = [(b[0] - a[0]).total_seconds() for a, b in zip(events, events[1:], strict=False)]
         mean_gap = sum(gaps) / len(gaps)
         cadence_cv = pstdev(gaps) / mean_gap if mean_gap > 0 else 0.0
-        mean_size = sum(size for _, size in recent) / len(recent)
+        mean_size = sum(size for _, size in events) / len(events)
         if mean_size > self.max_mean_size or cadence_cv > self.max_cadence_cv:
             return None
         self._flagged.add(key)
@@ -59,13 +64,13 @@ class FlowSightStub:
             source="flowsight",
             flow_id=flow.flow_id,
             entity={"src_ip": flow.src_ip, "dst_ip": flow.dst_ip},
-            ts=flow.end_ts,
+            ts=newest,
             score=0.8,
-            label=f"regular-small-flows {STUB}",
+            label=f"regular-small-packets {STUB}",
             features={
                 "mean_pkt_size": mean_size,
                 "cadence_cv": cadence_cv,
-                "flow_count": float(len(recent)),
+                "packet_count": float(len(events)),
             },
             threshold_used=self.max_cadence_cv,
         )

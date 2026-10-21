@@ -27,8 +27,8 @@ def main(argv: list[str] | None = None) -> int:
             f"  ALERT {a.alert_id} {a.entity.src_ip} -> {a.entity.dst_ip}  "
             f"severity={a.severity}  detections={','.join(a.detection_ids)}"
         )
-    if result.detections:
-        print("note: detectors are [stub] until the real FlowSight and CoverTrace are merged")
+    if any("[stub]" in d.label for d in result.detections):
+        print("note: FlowSight is a [stub] until the real detector lands; CoverTrace is real")
     return 0
 
 
