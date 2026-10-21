@@ -38,6 +38,7 @@ AI use is still disclosed once, in the project report (`docs/specs/GkmkbSpec.md`
 - Ticket branches: `<module>/<owner>-<ticket>`, cut from the module branch, e.g. `mimicnet/shivansh-honeypot-session`. Use `python scripts/ticket.py start <issue>`.
 - Ticket PRs go into the module branch with a merge commit and green CI. The lead merges module branches into `main`.
 - Shared files are the lead's: see `CONTRIBUTING.md`.
+- **Never delete branches** after a merge, with a flag, a button or a script. A branch may be deleted only when the lead asks for a cleanup, and only if it is already merged into `main`.
 
 ## Commit hygiene
 - One logical change per commit.

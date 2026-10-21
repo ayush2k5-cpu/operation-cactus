@@ -12,6 +12,8 @@ import shutil
 import subprocess
 from pathlib import Path
 
+from ticket import module_of
+
 ROOT = Path(__file__).resolve().parent.parent
 TASKS = ROOT / "tasks"
 STATES = ("pending", "in-progress", "done", "failed")
@@ -56,9 +58,11 @@ def find_existing(slug: str) -> tuple[str, Path] | None:
     return None
 
 
-def render(issue: dict, agent: str) -> str:
+def render(issue: dict, agent: str, module: str | None) -> str:
     body = issue["body"] or ""
     parts = [f"# [GKMKB] {issue['title']}", "", "## Issue", f"#{issue['number']}", ""]
+    if module:
+        parts += ["## Module", module, ""]
     for name in ("What", "Why", "Acceptance Criteria", "Blockers", "Steps"):
         text = section(body, name)
         if text:
@@ -70,6 +74,7 @@ def render(issue: dict, agent: str) -> str:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--repo")
+    ap.add_argument("--refresh", action="store_true", help="rewrite files still in pending/")
     args = ap.parse_args()
     for state in STATES:
         (TASKS / state).mkdir(parents=True, exist_ok=True)
@@ -84,11 +89,11 @@ def main() -> None:
                 shutil.move(existing[1], TASKS / "done" / existing[1].name)
                 moved += 1
             continue
-        if existing:
+        if existing and not (args.refresh and existing[0] == "pending"):
             continue
         agent = next((AGENTS[lab] for lab in labels if lab in AGENTS), "Claude Code")
         path = TASKS / "pending" / f"{slug}-{issue['createdAt'][:10]}.md"
-        path.write_text(render(issue, agent), encoding="utf-8")
+        path.write_text(render(issue, agent, module_of(sorted(labels))), encoding="utf-8")
         made += 1
     print(f"created {made}, moved to done {moved}")
 

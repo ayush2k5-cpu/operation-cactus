@@ -28,7 +28,7 @@ A branch called `mimicnet` and a branch called `mimicnet/x` cannot coexist in gi
 2. Start it: `python scripts/ticket.py start <issue>`. This makes `<module>/<owner>-<ticket>` from your module branch and comments "taking this". Never work on `main` or on a `mod/` branch directly.
 3. Build with small commits, Conventional Commits: `feat: add subdomain entropy function`.
 4. Submit it: `python scripts/ticket.py submit <issue>`. It runs ruff and pytest, pushes, and opens a PR into **your module branch** (not `main`).
-5. When CI is green, merge your own PR into the module branch with a merge commit (not squash, not rebase). Delete the ticket branch only after the merge.
+5. When CI is green, merge your own PR into the module branch with a merge commit (not squash, not rebase). Never delete branches yourself and never tick "delete branch" on a PR. Branches stay until Ayush asks for a cleanup.
 6. Ayush merges the module branch into `main` at milestones and whenever another module needs your code (`python scripts/release.py <module>`). The issue closes then.
 
 ## Shared files

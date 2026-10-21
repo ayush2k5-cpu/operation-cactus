@@ -133,7 +133,7 @@ def submit(number: str) -> None:
         ]
     )
     print(out.stdout.strip())
-    print(f"PR opened into {base}. Merge it yourself once CI is green.")
+    print(f"PR opened into {base}. Merge it yourself once CI is green. Do not delete the branch.")
 
 
 def main(argv: list[str] | None = None) -> None:
