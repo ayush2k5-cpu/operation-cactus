@@ -66,6 +66,17 @@ if (-not $SkipDocker -and (Has "docker") -and (Test-Path "docker-compose.yml")) 
   try { docker compose pull } catch { Write-Host "[warn] docker compose pull failed. Is Docker Desktop running?" }
 }
 
+# Git identity
+if (Has "git") {
+  $gn = git config --global user.name
+  $ge = git config --global user.email
+  if (-not $gn -or -not $ge) {
+    Write-Host "[todo] Set your git name and email (once):"
+    Write-Host '       git config --global user.name "Your Name"'
+    Write-Host '       git config --global user.email "you@example.com"'
+  }
+}
+
 # GitHub auth hint
 if (Has "gh") {
   gh auth status 2>$null
@@ -79,4 +90,4 @@ if ($hasTests) { & $py -m pytest -q } else { Write-Host "[skip] no tests yet" }
 Write-Host ""
 Write-Host "Setup done. Activate env:  .\.venv\Scripts\Activate.ps1"
 Write-Host "Workflow skills (optional, once): see docs\WorkflowSetup.md"
-Write-Host "Next: read CONTRIBUTING.md and open your issues (label owner:<name>) on GitHub."
+Write-Host "Next: read docs\Onboarding.md. It tells you exactly what to do and what not to do."

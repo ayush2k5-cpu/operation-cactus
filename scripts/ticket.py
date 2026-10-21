@@ -75,11 +75,16 @@ def python_exe() -> str:
     return sys.executable
 
 
-def start(number: str) -> None:
+def start(number: str, dry_run: bool = False) -> None:
     issue = load_issue(number)
     module = module_of(issue["label_names"])
     base = base_branch(module)
     branch = branch_name(module, owner_of(issue["label_names"]), issue["title"])
+    if dry_run:
+        print(
+            f"[dry run] would create {branch} from origin/{base} and comment 'taking this' on #{number}"
+        )
+        return
     run(["git", "fetch", "origin", "--quiet"])
     if run(["git", "rev-parse", "--verify", f"origin/{base}"], check=False).returncode:
         sys.exit(f"origin/{base} does not exist yet. Ask Ayush to create it.")
@@ -89,10 +94,15 @@ def start(number: str) -> None:
     print("Build the ticket, commit small, then run: python scripts/ticket.py submit " + number)
 
 
-def submit(number: str) -> None:
+def submit(number: str, dry_run: bool = False) -> None:
     issue = load_issue(number)
     module = module_of(issue["label_names"])
     base = base_branch(module)
+    if dry_run:
+        print(
+            f"[dry run] would run ruff, ruff format check and pytest, push, and open a PR into {base} for #{number}"
+        )
+        return
     branch = run(["git", "branch", "--show-current"]).stdout.strip()
     if branch in ("main", "") or branch.startswith("mod/"):
         sys.exit(f"You are on '{branch}'. Switch to your ticket branch first.")
@@ -133,7 +143,14 @@ def submit(number: str) -> None:
         ]
     )
     print(out.stdout.strip())
-    print(f"PR opened into {base}. Merge it yourself once CI is green. Do not delete the branch.")
+    if base == "main":
+        print(
+            "PR opened into main. Ayush merges it. Do not merge it yourself. Do not delete the branch."
+        )
+    else:
+        print(
+            f"PR opened into {base}. Merge it yourself once CI is green. Do not delete the branch."
+        )
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -142,8 +159,11 @@ def main(argv: list[str] | None = None) -> None:
     for name in ("start", "submit"):
         p = sub.add_parser(name)
         p.add_argument("issue")
+        p.add_argument(
+            "--dry-run", action="store_true", help="show what would happen, change nothing"
+        )
     args = parser.parse_args(argv)
-    {"start": start, "submit": submit}[args.command](args.issue.lstrip("#"))
+    {"start": start, "submit": submit}[args.command](args.issue.lstrip("#"), args.dry_run)
 
 
 if __name__ == "__main__":
