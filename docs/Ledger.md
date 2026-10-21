@@ -25,10 +25,12 @@ Status on 2026-10-21, taken from `main` at `ed8f510`. Expands `docs/specs/GkmkbS
 | Lab DNS-tunnel and benign pcaps | Working | PR #39; `data/demo/*.pcap`, `data/tools/MakeDnsPcaps.py`, `data/MANIFEST.md` (crafted with scapy, seed 42, synthetic, not captured traffic; not yet opened by hand in Wireshark, see the manifest). Test use: `covertrace/test_dns.py` | 2026-10-21 | Ayush (dispatcher) |
 | Tool-generated tunnel pcap (iodine or dnscat2) | Designed | `data/MANIFEST.md` lists it as not made | 2026-10-21 | Bhargav |
 | Report outline with ethics and dataset sections | Partial | PR #40; `docs/report/ReportOutline.md`. An outline, no results in it | 2026-10-21 | Ayush (dispatcher) |
-| Evaluation harness and metrics | Designed | Spec section 7; `eval/` is empty | 2026-10-18 | Sharukh |
+| Evaluation harness and metrics | Designed | `docs/specs/EvalSpec.md`; tickets #81, #82, #84, #88 to #90; `eval/` is empty | 2026-10-22 | Sharukh |
+| Retrained Paper 1 baseline | Designed | EvalSpec; ticket #87 | 2026-10-22 | Sharukh |
+| Consent record for captures | Designed | EvalSpec; ticket #83 | 2026-10-22 | Sharukh |
 | Adaptive thresholds | Designed | Spec section 9, Cycle 4; no code | 2026-10-18 | Shivansh |
 | MimicNet honeypot with session recording | Designed | MimicNet spec; tickets #57 and #60; `mimicnet/` is empty | 2026-10-22 | Shivansh (planned) |
-| MITRE tagging | Designed | MimicNet spec; ticket #21 | 2026-10-22 | Sharukh (planned) |
+| MITRE tagging | Designed | MimicNet spec and EvalSpec; tickets #85 and #86 (#21 closed as superseded) | 2026-10-22 | Sharukh (planned) |
 | Rule generation from sessions | Designed | MimicNet spec; ticket #58 | 2026-10-22 | Shivansh (planned) |
 | Rule loading in CoverTrace | Designed | MimicNet spec; ticket #58 | 2026-10-22 | Shivansh (planned) |
 | Fingerprint evasion (banner variation) | Designed | MimicNet spec; ticket #59; first on the cut line | 2026-10-22 | Shivansh (planned) |
