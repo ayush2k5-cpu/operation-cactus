@@ -79,10 +79,11 @@ The CLI keeps working with no database and no web server. That is the fallback d
   - List Alerts.
   - Close an Alert.
   - List replays.
+  - List the pcap names in the data folder (added after the dashboard spec, so the Console can offer a picker; ticket #70).
   
   List endpoints return newest first, accept an optional replay filter and a limit with a sensible default and maximum. The sessions and rules endpoints from the main spec are left to the MimicNet tickets.
 - **Replay path rule.** The pcap name must resolve to a file inside the data folder. Anything that resolves outside it is rejected. There is no upload, no authentication (a main-spec non-goal), and the server listens on the local machine only.
-- **WebSocket.** One endpoint pushes messages shaped `{type, replay_id, data}`. Types built here: `detection`, `alert`, `replay_done`. `data` holds the contract JSON for the first two; `replay_done` holds the final state and counts. A client that joins late receives nothing from the past: it reads REST first, then subscribes. A client that disconnects or reconnects never stops or crashes a replay. `session_event` and `rule` messages arrive with MimicNet.
+- **WebSocket.** One endpoint, `/ws/events` (ADR 0004), pushes messages shaped `{type, replay_id, data}`. Types built here: `detection`, `alert`, `replay_done`. `data` holds the contract JSON for the first two; `replay_done` holds the final state and counts. A client that joins late receives nothing from the past: it reads REST first, then subscribes. A client that disconnects or reconnects never stops or crashes a replay. `session_event` and `rule` messages arrive with MimicNet.
 - **`gkmkb serve`.** A new CLI command that starts the API. The container uses the same command.
 - **Compose stack.** Two services, the database and the backend, each with a health check. The database has a named volume. The data folder mounts read-only into the backend. The environment comes from the example environment file. Teardown keeps the volume unless asked to remove it. The Console service is added when the Console exists.
 - **Honeypot Docker access (flagged, not decided).** MimicNet will need the backend to start containers, which means giving the backend container access to the host Docker engine. That is a real security trade-off on a lab machine. It is decided in the MimicNet spec, not here.

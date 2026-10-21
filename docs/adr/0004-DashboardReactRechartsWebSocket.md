@@ -1,6 +1,6 @@
 # ADR 0004 — Dashboard: React + Recharts over WebSocket
 
-Status: Accepted 2026-10-22 (Ayush) for the WebSocket transport; the React and chart-library part is confirmed in the dashboard spec
+Status: Accepted 2026-10-22 (Ayush). The WebSocket transport is accepted; React, TypeScript and Recharts are confirmed in the dashboard spec.
 Date: 2026-10-18
 
 ## Context
