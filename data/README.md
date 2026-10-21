@@ -1,6 +1,6 @@
 # Data
 
-Datasets and pcaps. Big files are gitignored (`data/*` in `.gitignore`); fetch with `python scripts/FetchData.py <name>`. Crafted lab pcaps are listed in `MANIFEST.md`.
+Datasets and pcaps. Big files are gitignored (`data/*` in `.gitignore`). Crafted lab pcaps are listed in `MANIFEST.md`.
 
 ## Honesty note (dataset spike, issue #10)
 
@@ -42,8 +42,4 @@ Decision D8: **pending Ayush**. Update `GkmkbSpec.md` row D8 and ADR 0007 status
 
 ## Fetch
 
-```
-python scripts/FetchData.py cic-ids2017-csv
-```
-
-Saves to `data/cic-ids2017/` and prints the sha256; paste it here. The script refuses any download over 1 GB unless `--allow-large` is passed after asking Ayush.
+No fetch script yet. A first draft guessed the download URL over plain http, so it was dropped. Open the dataset page by hand, confirm the licence and the real HTTPS link, check the size, and only then add a download script (ask Ayush before anything over 1 GB).
