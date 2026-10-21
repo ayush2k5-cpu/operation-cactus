@@ -35,7 +35,9 @@ All four use AI coding tools (Claude, Antigravity). AI-written code is allowed. 
 | M1 CoverTrace | `covertrace/` | `analyze(flow: FlowRecord) -> Detection \| None` | Flagship. Entropy, chi-square timing, protocol validation, adaptive baseline. Deepest evaluation. |
 | M2 Capture + FlowSight | `capture/`, `flowsight/` | `ReplaySource.flows() -> Iterator[FlowRecord]`; `analyze(flow) -> Detection \| None` | pcap to flows, 4 flow features, classifier. |
 | M3 MimicNet | `mimicnet/` | `engage(alert) -> HoneypotSession`; `rules_from(session) -> list[Rule]` | Docker honeypot, MITRE map, banner variation, rule generation. |
-| M4 Backend + Dashboard + Integration | `backend/`, `dashboard/`, `contracts/`, `eval/` | REST + WebSocket (section 5) | Gate, persistence, UI, demo script, CI. Heaviest; dashboard can split off as M5 if a fifth hand appears or work is shared. |
+| M4 Backend + Dashboard + Integration | `backend/`, `dashboard/`, `contracts/` | REST + WebSocket (section 5) | Gate, persistence, UI, demo script, CI. Heaviest; dashboard can split off as M5 if a fifth hand appears or work is shared. |
+
+The evaluation folder `eval/` is owned by Sharukh (evaluation spec, 2026-10-22); Ayush reviews every PR into it.
 
 Cross-cutting, shared by owners of M1 and M2: lab DNS-tunnel pcaps and datasets (tickets T07, T12).
 
@@ -71,10 +73,15 @@ Rule `match` examples: `{"qname_suffix": "t.evil.example"}`, `{"src_ip": "10.0.0
 7. Adaptive threshold shown: same traffic, two baselines, two cutoffs. The Console shows this as a threshold compare view of two replays, labelled "from Detections" (`threshold_used` and score), because the Baseline has no endpoint.
 
 ## 7. Evaluation (what the report may claim)
-- CoverTrace: precision, recall, F1, ROC/AUC, false-positive rate on benign DNS, static vs adaptive threshold. Datasets per ADR 0007.
-- FlowSight: same metrics on flow data.
-- Gate: false positives with gate vs either detector alone.
-- Closed loop: detection delta before and after an approved rule.
+Detail: `docs/specs/EvalSpec.md` (merged 2026-10-22, tickets #81 to #91).
+- Counting: per Entity per Episode. A Hit is a tunnel Entity with a Detection (an Alert for the gate); a False alarm is a benign Entity with one. Time to first Detection is also reported.
+- CoverTrace: precision, recall, F1, ROC/AUC, false-alarm rate on benign DNS including hard cases (CDN-style names, `.local`, bursty human traffic), fixed vs learned limit. Datasets per ADR 0007.
+- FlowSight: same metrics on windows from real tool-generated captures.
+- Gate: false alarms with the gate vs either detector alone, at equal hits, threshold chosen on the tuning set.
+- Paper 1 fused model retrained on the same features and capture split, as the baseline. Paper 1's own numbers are quoted once, marked synthetic.
+- Closed loop: flows and seconds to first Detection with and without an approved Rule; a Rule hit scores 1.0 by design.
+- MITRE: a verified keyword table checked by an exact-match test; this is table correctness, not accuracy.
+- Crafted and real results are reported in separate tables, every percent beside its raw count. Tune and test on different captures, split by capture.
 - Every number reproducible by `eval/` scripts with a fixed seed.
 
 ## 8. Honesty ledger (update with every merged PR)
@@ -89,6 +96,7 @@ Rule `match` examples: `{"qname_suffix": "t.evil.example"}`, `{"src_ip": "10.0.0
 | MimicNet honeypot, MITRE mapping | Designed |
 | Fingerprint evasion | Designed |
 | Closed-loop rules | Designed |
+| Evaluation harness, Paper 1 baseline, MITRE table | Designed (spec merged 2026-10-22, tickets #81 to #91) |
 | Dashboard | Designed (spec merged 2026-10-22, tickets #70 to #78; UI mock prompts exist) |
 
 ## 9. Cycles

@@ -40,6 +40,10 @@ Takeaway: three of four features come from the CIC-IDS2017 CSV with trivial tran
 
 Decision D8: **changed 2026-10-22** after the FlowSight grilling. CIC-IDS2017 is dropped for FlowSight: it has no DNS tunneling and its rows are whole flows, not windows. FlowSight trains on windows from real tool-generated captures (candidate CIC-Bell-DNS-EXF-2021 plus the team's laptop capture), split by capture. A person confirms the dataset page (licence, size, real link) before any download; downloads over 1 GB need Ayush's approval. See ADR 0007 addendum and ADR 0009. Recommendations 1 and 2 above are superseded.
 
+## Evaluation sets (added 2026-10-22)
+
+The evaluation spec (`docs/specs/EvalSpec.md`) adds: a labels file per pcap (each Entity tunnel or benign, written by the person who made the capture); a crafted benign set with CDN-hash names, `.local` and `.arpa` names and bursty human traffic, labelled "crafted" (ticket #81); and a consent record for each teammate and each benign capture (ticket #83). The CIC-Bell-DNS-EXF-2021 row stays Unverified until the page check in ticket #52. Crafted and real data are never mixed in one result table.
+
 ## Fetch
 
 No fetch script yet. A first draft guessed the download URL over plain http, so it was dropped. Open the dataset page by hand, confirm the licence and the real HTTPS link, check the size, and only then add a download script (ask Ayush before anything over 1 GB).

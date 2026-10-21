@@ -29,5 +29,8 @@ One word, one meaning. Use these terms in code, tickets, PRs and the report.
 | **Replay run** | One execution of a pcap through the Engine, with a unique `replay_id` that prefixes every Detection and Alert ID of that run. |
 | **Scripted attacker** | A fixed list of commands, played by the team, that drives the honeypot shell in tests and in the demo. There is no real attacker. |
 | **Rule hit** | A Detection raised because a flow matched an active Rule, labelled with the Rule id, instead of by a statistical check. It scores 1.0. |
+| **Hit** | A tunnel Entity that gets a Detection from a detector, or an Alert for the Gate, in evaluation. Counted per Entity per Episode. |
+| **False alarm** | A benign Entity that gets a Detection or an Alert in evaluation. Counted per Entity per Episode. |
+| **Held-out set** | Captures kept out of tuning and used only for scoring. Split by capture, never by Window. |
 | **Threshold compare** | A Console view that puts two replays side by side using `threshold_used` and score of their CoverTrace Detections. It is labelled "from Detections" and is not a Baseline view. |
 | **Designed / Partial / Working** | Honesty labels. *Designed*: on paper only. *Partial*: runs but not evaluated or not complete. *Working*: merged, tested, demonstrable. Reports use these words exactly. |

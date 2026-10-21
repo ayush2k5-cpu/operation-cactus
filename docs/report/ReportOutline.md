@@ -90,7 +90,9 @@ Every number must come from an `eval/` script with a fixed seed and be linked he
 | Closed loop: detection delta before and after an approved rule | Rules, replay | Designed | TBD |
 | Headline demo (spec section 6) runs from one command on a clean machine | Demo script | Designed | TBD |
 
-Blockers for this chapter: #10 and #12 (evaluation inputs). Do not fill any row until they are merged.
+Rules for this chapter (`docs/specs/EvalSpec.md`): crafted and real results sit in separate tables; every percent shows its raw count; tune on one set of captures and score on another, split by capture; the gate threshold is chosen on the tuning set; the crafted control favours the gate by design, so only real and hard-benign results count as evidence; Paper 1's own numbers appear in one sentence marked synthetic, and the Paper 1 model is retrained on our data for the table.
+
+Blockers for this chapter: evaluation tickets #81 to #91 and the real-capture ticket #49. Do not fill any row until the matching output file exists.
 
 ## 6. Ethics and legal
 
