@@ -50,7 +50,7 @@ gh auth login
 Follow `docs/WorkflowSetup.md` once. It installs the shared skills and shows the daily loop.
 
 ### 5. Pick a ticket and start
-Open the Issues tab, take an issue with your `owner:<name>` label, comment "taking this", branch, code, open a PR with `Closes #N`. Details in `CONTRIBUTING.md`.
+Open the Issues tab, take an issue with your `owner:<name>` label, then run `python scripts/ticket.py start <issue number>`. When you are done run `python scripts/ticket.py submit <issue number>`; it opens a PR into your module branch. Details in `CONTRIBUTING.md`.
 
 ## Modules
 | Module | Folder | What |

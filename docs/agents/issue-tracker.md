@@ -22,5 +22,8 @@ Create blockers first so later tickets can reference their numbers.
 `gh issue view <number>`. Find tickets with `gh issue list --label "owner:<name>" --state open`.
 
 ## Claiming and finishing
-- Claim: comment "taking this" on the issue and branch `dev/<name>-<ticket>`. Assign yourself when your GitHub username is known.
-- Finish: the merging PR says `Closes #N`. Update the honesty ledger if a capability changed state.
+- Claim: `python scripts/ticket.py start <n>` (branch `<module>/<owner>-<ticket>` from `mod/<module>`; comments "taking this").
+- Finish: the ticket PR says `Closes #N` and merges into the module branch. The issue closes when the lead merges the module branch to `main`. Record any ledger state change in the PR body; the lead updates the ledger.
+
+## Required labels on every published ticket
+`module:*`, `cycle-N`, `owner:*`, and for the lead's dispatcher an `agent:claude` or `agent:agy` label by complexity (simple even if big goes to `agy`; complex or unsure goes to Claude). No agent label means a human task. Teammates may ignore the agent label.

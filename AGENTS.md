@@ -23,8 +23,9 @@ GKMKB: detection middleware. Engine + CLI (`gkmkb replay <pcap>`) is the product
 Every capability is Designed, Partial or Working (`GkmkbSpec.md` section 8). Mark stub code with a visible `[stub]` tag in output and docstring. Never write docs, comments or reports that claim more than the code does.
 
 ## Git and PRs
-- Follow `docs/rules/GitRules.md`: branch `dev/<name>-<ticket>` from `main`, never push to `main`, Conventional Commits, no AI attribution in commits, PRs or code comments.
-- PR uses `.github/PULL_REQUEST_TEMPLATE.md`, links the ticket, and updates the honesty ledger if a capability changed state.
+- Follow `docs/rules/GitRules.md`: start with `python scripts/ticket.py start <issue>` (branch `<module>/<owner>-<ticket>` cut from `mod/<module>`), PR into the module branch, never push to `main` or `mod/` branches, Conventional Commits, no AI attribution in commits, PRs or code comments.
+- Do not edit shared files (`GLOSSARY.md`, ADRs, specs, `docs/Ledger.md`, report, `contracts/`). Put the ledger state change in the PR body; the lead records it.
+- PR uses `.github/PULL_REQUEST_TEMPLATE.md` and links the ticket.
 - The owner must be able to explain every line in a viva. Do not paste code you cannot explain.
 
 ## Agent skills
