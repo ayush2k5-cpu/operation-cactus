@@ -1,3 +1,49 @@
 # Data
 
-Datasets and pcaps. Large files are gitignored. Add one line per dataset: name, licence, citation, source URL, date fetched. See ticket DatasetSpike.
+Datasets and pcaps. Big files are gitignored (`data/*` in `.gitignore`); fetch with `python scripts/FetchData.py <name>`. Crafted lab pcaps are listed in `MANIFEST.md`.
+
+## Honesty note (dataset spike, issue #10)
+
+Written offline. Sizes, URLs and citations below come from the spike author's knowledge of the CIC pages, not from a live check. Status of each row is **Unverified** until a teammate opens the page, confirms licence text, size and link, and edits the row. `FetchData.py` has not been run against the network.
+
+## Datasets considered
+
+| Dataset | Form | Attacks | DNS tunneling? | Size (approx) | Licence | Citation | Source | Date fetched | Status |
+|---|---|---|---|---|---|---|---|---|---|
+| CIC-IDS2017 | CICFlowMeter CSV (`MachineLearningCSV.zip`) plus raw pcaps | Brute force FTP/SSH, DoS, Heartbleed, web attacks, infiltration, botnet, port scan, DDoS | No | CSV zip ~0.2 GB; pcaps ~50 GB | UNB CIC terms: free for research, cite the paper. No SPDX licence | Sharafaldin, Lashkari, Ghorbani. "Toward Generating a New Intrusion Detection Dataset and Intrusion Traffic Characterization". ICISSP 2018 | https://www.unb.ca/cic/datasets/ids-2017.html | not fetched | Unverified |
+| CIC-Bell-DNS-EXF-2021 | pcaps plus stateless/stateful feature CSVs | DNS exfiltration via dnscat2, dns2tcp, iodine | Yes | Several GB, exact size unknown | UNB CIC terms: research use, cite the paper | Mahdavifar, Salem, Hanafy, Ghorbani. CIC-Bell-DNS-EXF-2021 (UNB CIC, 2021). Confirm venue on the page | https://www.unb.ca/cic/datasets/dns-exf-2021.html | not fetched | Unverified |
+| CIC-DoHBrw-2020 | CICFlowMeter-style CSV plus pcaps | DoH tunneling (dns2tcp, dnscat2, iodine over DoH) | Over DoH only, not plain DNS | ~ a few GB, unknown | UNB CIC terms: research use, cite the paper | MontazeriShatoori, Davidson, Kaur, Lashkari. "Detection of DoH Tunnels using Time-series Classification of Encrypted Traffic". DASC 2020 | https://www.unb.ca/cic/datasets/dohbrw-2020.html | not fetched | Unverified |
+| Lab pcaps (ours) | crafted scapy pcaps | Synthetic DNS tunnel | Yes (synthetic) | < 5 MB each | Ours | n/a, see `MANIFEST.md` | `data/tools/MakeDnsPcaps.py` | 2026-10-21 | Working |
+
+## FlowSight feature mapping
+
+Feature definitions are not written down in the repo yet. This table assumes: `flow_avg_pkt_size_log` = log of mean packet size in bytes; `flow_pkt_size_variance` = variance of packet size; `flow_iat_mean_ms` = mean inter-arrival time in ms; `flow_burst_ratio` = share of inter-arrival gaps under a configured burst threshold. Correct this table if the FlowSight owner defines them differently.
+
+CICFlowMeter column names are from the public CIC-IDS2017 CSVs (units: IAT in microseconds). Check on the real header before training.
+
+| Feature | CIC-IDS2017 CSV | CIC-Bell-DNS-EXF-2021 | CIC-DoHBrw-2020 | From pcap via ReplaySource |
+|---|---|---|---|---|
+| `flow_avg_pkt_size_log` | Derivable: `log1p(Packet Length Mean)` | Derivable if flow CSV has a packet size mean; else from pcap | Derivable: log of packet length mean | Direct from `pkt_sizes[]` |
+| `flow_pkt_size_variance` | Direct: `Packet Length Variance` | Derivable from pcap; CSV columns unconfirmed | Direct: packet length variance | Direct from `pkt_sizes[]` |
+| `flow_iat_mean_ms` | Derivable: `Flow IAT Mean` / 1000 (µs to ms) | Derivable from pcap; CSV columns unconfirmed | Derivable: flow IAT mean, unit to check | Direct from `iat_ms[]` |
+| `flow_burst_ratio` | Missing. Only weak proxies (`Flow IAT Min/Max`, `Active Mean`, `Idle Mean`) | Missing in CSV, derivable from pcap | Missing in CSV, derivable from pcap | Direct from `iat_ms[]` with the burst threshold |
+
+Takeaway: three of four features come from the CIC-IDS2017 CSV with trivial transforms. `flow_burst_ratio` needs per-packet timing, so it needs pcaps.
+
+## Recommendation (for decision D8, Ayush confirms)
+
+1. **Train and baseline FlowSight on CIC-IDS2017 CSVs.** Small download (~0.2 GB, under the 1 GB limit), well known so the panel recognises it, and three of four features map directly or by a one-line transform.
+2. **Do not use CIC-IDS2017 for `flow_burst_ratio` or for any DNS tunnel claim.** It has no DNS tunneling and no per-packet timing in the CSV. Either drop burst ratio from the CIC-trained model, or compute it from a small slice of the raw pcaps (do not pull the full ~50 GB).
+3. **Use CIC-Bell-DNS-EXF-2021 as the optional real-traffic check for CoverTrace**, after confirming its size and licence. It has real tool-generated tunnels (iodine, dnscat2), which our crafted pcaps do not. Ask Ayush before any download over 1 GB.
+4. **Keep lab pcaps** as the demo input and the controlled tests (ADR 0007 part a).
+5. Do not claim FlowSight is trained on real data until step 1 is run. Until then it is Designed, not Working (`GkmkbSpec.md` section 8).
+
+Decision D8: **pending Ayush**. Update `GkmkbSpec.md` row D8 and ADR 0007 status once confirmed.
+
+## Fetch
+
+```
+python scripts/FetchData.py cic-ids2017-csv
+```
+
+Saves to `data/cic-ids2017/` and prints the sha256; paste it here. The script refuses any download over 1 GB unless `--allow-large` is passed after asking Ayush.
