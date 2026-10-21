@@ -4,10 +4,10 @@
 | Area | Owner | GitHub |
 |---|---|---|
 | Lead, contracts, CI, replay, CLI, gate, backend | Ayush | ayush2k5-cpu |
-| M1 CoverTrace | Shivansh | TBD |
-| Lab pcaps, fixtures, slides, dashboard (later) | Bhargav | TBD |
+| M1 CoverTrace, M3 MimicNet | Shivansh | TBD |
+| M2 FlowSight, lab pcaps and fixtures | Bhargav | TBD |
 | Ledger, datasets, evaluation, report, MITRE table | Sharukh | TBD |
-| M2 FlowSight, M3 MimicNet | Open (after Review 2) | |
+| Dashboard (for now) | Ayush | ayush2k5-cpu |
 
 Same names go into `.github/CODEOWNERS` once usernames are known. Ayush reviews every PR during Cycle 1.
 

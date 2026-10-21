@@ -11,3 +11,6 @@ Open item: manual vs automated rule conversion. Fully autonomous self-modifying 
 
 ## Consequences
 Demonstrable, bounded, safe. Honesty: label as Partial until evaluated; the claim is rule generation plus a measured detection delta, not general learning.
+
+## Addendum 2026-10-22 (MimicNet grilling)
+The first cut has two Rule kinds, both aimed at CoverTrace: a query-name suffix match and a source-address match. The "payload string" kind is out because no detector reads payload, and "threshold nudge" is out as cut-line depth. Every Rule is still born proposed and needs analyst approval. Active Rules reach CoverTrace through one call that sets its rule list; a matching flow gives a Rule hit (score 1.0).

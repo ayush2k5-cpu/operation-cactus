@@ -11,3 +11,6 @@ Panel will ask for dataset provenance. No unauthorized capture of real users.
 
 ## Consequences
 Reproducible, legal, citable. Real-looking tunnel traffic gives CoverTrace honest evaluation beyond synthetic numbers.
+
+## Addendum 2026-10-22 (FlowSight grilling)
+CIC-IDS2017 is dropped for FlowSight training: it has no DNS tunneling and its rows are whole flows, not windows. FlowSight trains on windows built by the replay path from real tool-generated tunnel captures (candidate: CIC-Bell-DNS-EXF-2021, plus the team's own laptop capture) with benign traffic as negatives, split by capture. A human confirms the dataset page (licence, size, real link) before any download, and downloads over 1 GB need Ayush's approval. If no real tunnel data is verified by the end of Cycle 2, the classifier is not built and FlowSight stays rule-based. This overturns the dataset spike's recommendation and decision D8.
