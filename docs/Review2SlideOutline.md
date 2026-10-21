@@ -13,7 +13,7 @@ Review 2 is 2026-10-24, a progress discussion. Ayush builds the deck from this o
 
 - Detection middleware. The engine and the CLI (`gkmkb replay <pcap>`) are the product. The web console is a viewer (ADR 0008).
 - Today only the CLI exists. The console is Designed.
-- Ledger: `gkmkb replay` CLI (Partial), Dashboard (Designed).
+- Ledger: `gkmkb replay` CLI (Working, FlowSight input is a stub), Dashboard (Designed).
 
 ## Slide 3: Architecture
 
@@ -24,9 +24,9 @@ Review 2 is 2026-10-24, a progress discussion. Ayush builds the deck from this o
 ## Slide 4: What is done
 
 - Contracts, replay capture, correlation gate, CoverTrace DNS entropy detector, lab pcaps. Each is Working in the ledger, with its PR number (#34, #37, #36, #41, #39).
-- 41 tests pass on `main`.
-- CLI demo screenshot (blocked on #5, take it once that lands): `gkmkb replay data/demo/dns_tunnel_plus_benign.pcap` gives 1 alert on 10.0.2.20; `data/demo/single_signal_control.pcap` gives 0 alerts.
-- Say on the slide: this result was checked by hand. The CLI is Partial in the ledger because no test asserts it on those two files and rule proposals are not printed yet.
+- 42 tests pass on `main`.
+- CLI demo screenshot: `gkmkb replay data/demo/dns_tunnel_plus_benign.pcap` gives 1 alert on 10.0.2.20; `data/demo/single_signal_control.pcap` gives 0 alerts.
+- A test asserts this result on both files. Say on the slide: rule proposals are not printed yet.
 - Say on the slide: the alert pairs the real entropy signal with the FlowSight stub.
 - Pcaps are crafted with scapy, seed 42, synthetic.
 
@@ -34,7 +34,6 @@ Review 2 is 2026-10-24, a progress discussion. Ayush builds the deck from this o
 
 - FlowSight: `[stub]`. No flow features and no classifier. The paper has a synthetic benchmark only.
 - CoverTrace: one detector (DNS entropy). ICMP chi-square, HTTP/protocol checks and the adaptive baseline are Designed.
-- `gkmkb replay` CLI: Partial.
 - Report outline: Partial. No results.
 - No evaluation numbers yet. Do not quote any.
 
