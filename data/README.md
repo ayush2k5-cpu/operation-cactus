@@ -38,7 +38,7 @@ Takeaway: three of four features come from the CIC-IDS2017 CSV with trivial tran
 4. **Keep lab pcaps** as the demo input and the controlled tests (ADR 0007 part a).
 5. Do not claim FlowSight is trained on real data until step 1 is run. Until then it is Designed, not Working (`GkmkbSpec.md` section 8).
 
-Decision D8: **pending Ayush**. Update `GkmkbSpec.md` row D8 and ADR 0007 status once confirmed.
+Decision D8: **changed 2026-10-22** after the FlowSight grilling. CIC-IDS2017 is dropped for FlowSight: it has no DNS tunneling and its rows are whole flows, not windows. FlowSight trains on windows from real tool-generated captures (candidate CIC-Bell-DNS-EXF-2021 plus the team's laptop capture), split by capture. A person confirms the dataset page (licence, size, real link) before any download; downloads over 1 GB need Ayush's approval. See ADR 0007 addendum and ADR 0009. Recommendations 1 and 2 above are superseded.
 
 ## Fetch
 

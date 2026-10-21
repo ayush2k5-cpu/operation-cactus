@@ -1,6 +1,6 @@
 # ADR 0005 — MongoDB in docker compose
 
-Status: Proposed (Ayush to accept or change)
+Status: Accepted 2026-10-22 (Ayush)
 Date: 2026-10-18
 
 ## Context

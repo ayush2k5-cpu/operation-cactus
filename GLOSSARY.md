@@ -24,4 +24,9 @@ One word, one meaning. Use these terms in code, tickets, PRs and the report.
 | **Baseline** | Rolling per-network statistics CoverTrace uses to set adaptive thresholds. |
 | **Adaptive threshold** | Entropy or chi-square cutoff computed from the Baseline instead of a fixed constant. |
 | **Walking skeleton** | Thinnest end-to-end path (replay → detectors → gate → API → dashboard) with stub internals. Built first. |
+| **Window** | A sliding stretch of time (default 60 seconds) over which a detector pools the traffic of one Entity before judging it. FlowSight pools packet sizes and gaps; CoverTrace pools DNS names. |
+| **Episode** | One attack period on an Entity. The Entity is flagged once; it can be flagged again only after one full quiet Window. |
+| **Replay run** | One execution of a pcap through the Engine, with a unique `replay_id` that prefixes every Detection and Alert ID of that run. |
+| **Scripted attacker** | A fixed list of commands, played by the team, that drives the honeypot shell in tests and in the demo. There is no real attacker. |
+| **Rule hit** | A Detection raised because a flow matched an active Rule, labelled with the Rule id, instead of by a statistical check. It scores 1.0. |
 | **Designed / Partial / Working** | Honesty labels. *Designed*: on paper only. *Partial*: runs but not evaluated or not complete. *Working*: merged, tested, demonstrable. Reports use these words exactly. |

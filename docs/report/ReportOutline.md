@@ -58,7 +58,7 @@ Report must say the Paper 1 numbers are synthetic and are not evidence for the e
 ### 4.4 FlowSight (M2)
 | Claim | Capability needed | State | Link |
 |---|---|---|---|
-| Four flow features and a classifier work on metadata only | Real FlowSight | Partial (Paper 1 synthetic benchmark; code is a `[stub]`) | TBD |
+| Per-Entity windows with four metadata-only features, a rule scorer and later a classifier | Real FlowSight (ADR 0009) | Designed (Paper 1 synthetic benchmark only; code is a `[stub]`) | TBD |
 
 ### 4.5 Correlation gate
 | Claim | Capability needed | State | Link |
@@ -85,7 +85,7 @@ Every number must come from an `eval/` script with a fixed seed and be linked he
 | Claim | Capability needed | State | Link |
 |---|---|---|---|
 | CoverTrace precision, recall, F1, ROC/AUC, FPR on benign DNS; static vs adaptive threshold | Real CoverTrace, datasets, `eval/` | Designed | TBD (eval output) |
-| FlowSight same metrics on a public flow dataset | Real FlowSight, dataset | Designed | TBD |
+| FlowSight same metrics on windows from real tool-generated tunnel captures (not CIC-IDS2017) | Real FlowSight, verified dataset or laptop capture | Designed | TBD |
 | Gate false positives against either detector alone | Real detectors, gate, control pcap | Designed | TBD |
 | Closed loop: detection delta before and after an approved rule | Rules, replay | Designed | TBD |
 | Headline demo (spec section 6) runs from one command on a clean machine | Demo script | Designed | TBD |
@@ -106,7 +106,7 @@ Draft text, to be refined once datasets are fetched.
 |---|---|---|---|---|
 | Team lab DNS-tunnel pcaps | CoverTrace evaluation, demo | Team-owned, not redistributed if they contain personal browsing | TBD | Designed |
 | Team benign DNS pcaps (consented) | CoverTrace false-positive rate, demo | Team-owned, consented | TBD | Designed |
-| CIC-IDS2017 (candidate, to be confirmed by spike T07) | FlowSight evaluation | TBD: licence and citation to be copied from the source into `data/README.md` | TBD | Candidate |
+| CIC-Bell-DNS-EXF-2021 (candidate, page not yet verified by a person) and the team's own laptop capture | FlowSight training and evaluation (CIC-IDS2017 dropped, ADR 0007 addendum) | TBD: licence and citation to be copied from the source into `data/README.md` | TBD | Candidate |
 | Paper 1 synthetic generator | Baseline only | Team-owned | n/a | Partial |
 
 Large files are gitignored and fetched by script. One line per dataset (name, licence, citation, URL, date fetched) lives in `data/README.md`; that file must be filled before any evaluation number is reported.

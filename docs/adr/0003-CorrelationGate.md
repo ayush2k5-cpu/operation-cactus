@@ -1,6 +1,6 @@
 # ADR 0003 — Gate correlates on entity and time window
 
-Status: Proposed (Ayush to accept or change)
+Status: Accepted 2026-10-22 (Ayush)
 Date: 2026-10-18
 
 ## Context

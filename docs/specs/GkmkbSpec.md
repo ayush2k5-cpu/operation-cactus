@@ -25,8 +25,8 @@ Each module is a folder with one public entry point, so four people can work wit
 | Shivansh | M1 CoverTrace | All CoverTrace detectors, adaptive baseline |
 | Bhargav | Data + slides | Lab pcaps, fixtures, review slides, later dashboard shell and views |
 | Sharukh | Research + eval | Honesty ledger, datasets, evaluation harness, report, ethics, MITRE table |
-| M3 MimicNet | After Review 2 | Owner open: Ayush/Shivansh once the gate works, or Bhargav with tight tickets |
-| M2 FlowSight | After Review 2 (stub first) | Owner open |
+| M3 MimicNet | Cycles 3 and 4 | Shivansh, except the closed-loop end-to-end ticket (Ayush) |
+| M2 FlowSight | Cycles 2 and 4 | Bhargav (rule scorer first, classifier later) |
 
 All four use AI coding tools (Claude, Antigravity). AI-written code is allowed. Rules: owner can explain every line, tests ship with the PR, the report discloses AI assistance.
 
@@ -56,8 +56,8 @@ Rule `match` examples: `{"qname_suffix": "t.evil.example"}`, `{"src_ip": "10.0.0
 
 ## 5. Interfaces
 - Detectors are plain Python libraries called in-process by the backend (ADR 0002). No inter-service network between detectors on one host.
-- REST (FastAPI): `POST /api/replay {pcap}`, `GET /api/detections`, `GET /api/alerts`, `GET /api/sessions/{id}`, `GET /api/rules`, `POST /api/rules/{id}/approve`, `POST /api/rules/{id}/reject`.
-- WebSocket: `/ws/events` pushes `detection`, `alert`, `session_event`, `rule` messages (ADR 0004).
+- REST (FastAPI), built in the backend spec: health check, start a replay (returns `replay_id`), list Detections, list Alerts, close an Alert, list replays. List endpoints return newest first with an optional replay filter and a limit. The pcap name must resolve inside the data folder. Later, with MimicNet: `GET /api/sessions/{id}`, `GET /api/rules`, `POST /api/rules/{id}/approve`, `POST /api/rules/{id}/reject`.
+- WebSocket: one endpoint pushes `{type, replay_id, data}` with types `detection`, `alert`, `replay_done`; `session_event` and `rule` arrive with MimicNet (ADR 0004). A late client reads REST first, then subscribes.
 - Storage: MongoDB collections `detections`, `alerts`, `sessions`, `rules`, `baselines`.
 
 ## 6. Headline demo (acceptance of the whole system)
@@ -85,7 +85,7 @@ Rule `match` examples: `{"qname_suffix": "t.evil.example"}`, `{"src_ip": "10.0.0
 | FlowSight features and classifier | Partial: paper has a synthetic benchmark only |
 | CoverTrace indicators | Partial: paper has synthetic features only |
 | Adaptive thresholds | Designed |
-| Correlation gate | Designed |
+| Correlation gate | Working (PR 36, tests in the backend folder; tried only against the FlowSight stub) |
 | MimicNet honeypot, MITRE mapping | Designed |
 | Fingerprint evasion | Designed |
 | Closed-loop rules | Designed |
@@ -114,13 +114,13 @@ Final date not fixed; each cycle ends with something demonstrable.
 | D0 | Product form | **Locked**: middleware + thin web console, CLI first (ADR 0008) |
 | D1 | Capture language | **Locked**: Python replay now; live agent (Rust or C) is a stretch, not claimed until built (ADR 0001) |
 | D2 | Paper 1 fused classifier vs independent detectors | **Locked**: independent detectors + gate; fused model kept in `eval/` as baseline (ADR 0002) |
-| D3 | Dashboard charts | Proposed: React + Recharts (ADR 0004) |
-| D4 | Dashboard transport | Proposed: WebSocket (ADR 0004) |
-| D5 | Database | Proposed: MongoDB (ADR 0005) |
-| D6 | Rule generation | Proposed: automated extraction + analyst approval (ADR 0006) |
+| D3 | Dashboard charts | Proposed: React + Recharts (ADR 0004); confirmed in the dashboard spec |
+| D4 | Dashboard transport | **Locked**: WebSocket (ADR 0004) |
+| D5 | Database | **Locked**: MongoDB (ADR 0005) |
+| D6 | Rule generation | Proposed: automated extraction + analyst approval; first cut has two Rule kinds, both for CoverTrace (ADR 0006 addendum) |
 | D7 | "Key Breach" | **Locked**: exfiltration of secrets or data over a covert channel |
-| D8 | Datasets | Proposed: lab pcaps + one public flow dataset; spike ticket decides (ADR 0007) |
-| D9 | Owners | **Locked** for Cycle 1 (section 3); M2/M3 owners open |
+| D8 | Datasets | **Changed 2026-10-22**: CIC-IDS2017 dropped for FlowSight; real tool-generated captures (candidate CIC-Bell-DNS-EXF-2021 plus the laptop capture) after a human verifies the page (ADR 0007 addendum, ADR 0009) |
+| D9 | Owners | **Locked**: FlowSight Bhargav, MimicNet Shivansh, CoverTrace Shivansh, backend and dashboard Ayush (dashboard moved to Ayush 2026-10-22), evaluation Sharukh |
 | D10 | Paper 1 venue and date | **Open**, needed for review packet |
 | D11 | Repo | **Locked**: private, `ayush2k5-cpu`; teammates' usernames pending |
 | D12 | Cut line | **Locked** (section 9) |
