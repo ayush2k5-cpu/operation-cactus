@@ -7,10 +7,10 @@ Closes #<issue number>
 - [ ] pytest passes locally
 - [ ] Ticket acceptance criteria checked
 
-## Honesty ledger
-- [ ] Updated docs/specs/GkmkbSpec.md section 8 if a capability changed state (Designed / Partial / Working)
+## Ledger
+State change for Ayush to record when merging to main (Designed, Partial or Working, with evidence), or none:
+
 - [ ] No claim added that this PR does not back up
 
-## Touches another module or contracts/?
-- [ ] No
-- [ ] Yes, owner tagged for review
+## Shared files
+- [ ] I did not edit GLOSSARY, ADRs, specs, the ledger, the report or contracts (Ayush owns them)

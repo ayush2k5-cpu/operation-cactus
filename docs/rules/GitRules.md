@@ -33,9 +33,11 @@ AI use is still disclosed once, in the project report (`docs/specs/GkmkbSpec.md`
 4. Continue after cleanup.
 
 ## Branch strategy
-- `main` is stable. Never commit to it directly.
-- Working branches: `dev/<name>-<ticket>`, e.g. `dev/shivansh-dns-entropy`.
-- Merge to `main` by PR only, one review plus green CI.
+- `main` is stable. Only the lead merges to it. Never commit to it directly.
+- Module branches: `mod/covertrace`, `mod/flowsight`, `mod/mimicnet`, `mod/backend`, `mod/eval`. Never commit to them directly.
+- Ticket branches: `<module>/<owner>-<ticket>`, cut from the module branch, e.g. `mimicnet/shivansh-honeypot-session`. Use `python scripts/ticket.py start <issue>`.
+- Ticket PRs go into the module branch with a merge commit and green CI. The lead merges module branches into `main`.
+- Shared files are the lead's: see `CONTRIBUTING.md`.
 
 ## Commit hygiene
 - One logical change per commit.

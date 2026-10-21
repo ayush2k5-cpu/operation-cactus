@@ -1,0 +1,37 @@
+name: sync-module-branches
+
+# After each push to main, merge main into every mod/* branch so module branches do not drift.
+# On a conflict the branch is left alone and an issue asks the lead to merge it by hand.
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Merge main into module branches
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          for ref in $(git for-each-ref --format='%(refname:short)' 'refs/remotes/origin/mod/*'); do
+            branch="${ref#origin/}"
+            git checkout -q -B sync-tmp "$ref"
+            if git merge --no-edit origin/main; then
+              git push origin "sync-tmp:$branch"
+            else
+              git merge --abort
+              gh issue create --title "Merge main into $branch by hand" \
+                --body "The automatic merge of main into $branch hit a conflict. Merge it locally, resolve the conflict and push."
+            fi
+          done

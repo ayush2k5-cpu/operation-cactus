@@ -42,14 +42,13 @@ If the install fails, run `npx skills --help` and check Node is 20 or newer (`no
 Cycle 1 rule: hand the ticket's `## Steps` to your agent **one step at a time**. Then run `/grill-with-docs` → `/to-spec` → `/to-tickets` for your own next-cycle module (your `ModuleSpec...` ticket).
 
 1. **Pick** an open issue with your `owner:<name>` label. Read the whole issue (`gh issue view <n>`).
-2. **Claim**: comment "taking this" on the issue and create the branch `dev/<name>-<ticket>`.
-3. **Clarify** if anything is vague: run `/grill-with-docs` and answer its questions. It updates `GLOSSARY.md` or proposes an ADR when a decision settles. Commit those with your PR.
+2. **Start**: `python scripts/ticket.py start <n>`. It makes your ticket branch from your module branch and comments "taking this".
+3. **Clarify** if anything is vague: run `/grill-with-docs` and answer its questions. Shared files are Ayush's, so write needed glossary or ADR changes in the PR body instead of editing them.
 4. **Build** with your agent. Tell it: "Work only on this ticket, follow AGENTS.md, write tests first or with the code." Small steps.
-5. **Check** locally: ruff, pytest (and the dashboard lint/build if you touched it). See `CONTRIBUTING.md`.
-6. **Explain**: read your own diff. If you cannot explain a line, ask the agent to explain it or rewrite it simpler.
-7. **PR**: run `/pr` to draft the body, fill `.github/PULL_REQUEST_TEMPLATE.md`, link the ticket, update the honesty ledger if a capability changed state (Designed, Partial, Working).
-8. **Review**: another teammate reads the diff and runs the tests. Ayush reviews every PR in Cycle 1. Merge with a merge commit (not squash) after green CI.
-9. **Finish**: the merge PR says `Closes #N`, which closes the issue. Delete the branch after the merge.
+5. **Explain**: read your own diff. If you cannot explain a line, ask the agent to explain it or rewrite it simpler.
+6. **Submit**: `python scripts/ticket.py submit <n>`. It runs ruff and pytest, pushes, and opens a PR into your module branch. Use `/pr` if you want a better PR body.
+7. **Merge**: when CI is green, merge your PR into the module branch with a merge commit. Delete your ticket branch after the merge.
+8. **Release**: Ayush merges the module branch into `main` and the issue closes then.
 
 ## 5. Role notes
 **Coders (Ayush, Shivansh):** use `/to-spec` for a new feature, then `/to-tickets` to split it. New tickets are published as GitHub Issues (`docs/agents/issue-tracker.md`).
