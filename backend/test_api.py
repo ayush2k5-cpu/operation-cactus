@@ -176,11 +176,13 @@ def test_list_detections_filter_by_replay(data_dir, store):
 
 
 def test_list_detections_includes_single_signal(data_dir, store):
+    build(data_dir / "single.pcap", [("10.0.0.8", benign_labels(30), [0.1])])
     client = TestClient(create_app(store, data_dir))
-    replay_id, _ = replay_messages(client, "control.pcap")
+    replay_id, _ = replay_messages(client, "single.pcap")
     resp = client.get("/api/detections", params={"replay_id": replay_id})
     assert resp.status_code == 200
     assert len(resp.json()) > 0
+    assert client.get("/api/alerts", params={"replay_id": replay_id}).json() == []
 
 
 def test_list_detections_limit(data_dir, store):
