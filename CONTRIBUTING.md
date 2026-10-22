@@ -32,7 +32,7 @@ A branch called `mimicnet` and a branch called `mimicnet/x` cannot coexist in gi
 6. Ayush merges the module branch into `main` at milestones and whenever another module needs your code (`python scripts/release.py <module>`). The issue closes then.
 
 ## Shared files
-Only Ayush edits `GLOSSARY.md`, `docs/adr/`, `docs/specs/`, `docs/Ledger.md`, `docs/report/`, `contracts/` and `CONTRIBUTING.md`. If your ticket says "update the ledger", write the state change (Designed, Partial or Working, with the evidence) in the PR body instead, under "Ledger". Ayush records it when he merges to `main`. If you need a shared file changed, say so in the PR.
+Only Ayush edits `GLOSSARY.md`, `docs/adr/`, `docs/specs/`, `docs/Ledger.md`, `docs/report/`, `contracts/` and `CONTRIBUTING.md`. One exception: a ticket may tell you to add a new file under `docs/report/` (for example the evaluation chapter); you may add that new file but never edit an existing report file. If your ticket says "update the ledger", write the state change (Designed, Partial or Working, with the evidence) in the PR body instead, under "Ledger". Ayush records it when he merges to `main`. If you need a shared file changed, say so in the PR.
 
 ## Flow (Ayush)
 - Your own tickets follow the same path through `mod/backend`.

@@ -78,7 +78,7 @@ You only ever work on your ticket branch. You only ever merge into your module b
 - Don't delete any branch, ever. Cleanup is done by Ayush when he asks.
 - Don't use `git push --force` or `git reset --hard` or rewrite history.
 - Don't merge your PR into `main`. Your PR goes into your module branch only.
-- Don't edit the shared files: `GLOSSARY.md`, `docs/adr/`, `docs/specs/`, `docs/Ledger.md`, `docs/report/`, `contracts/`, `CONTRIBUTING.md`. If you need a change, say so in your PR and Ayush does it.
+- Don't edit the shared files: `GLOSSARY.md`, `docs/adr/`, `docs/specs/`, `docs/Ledger.md`, `docs/report/`, `contracts/`, `CONTRIBUTING.md`. (A ticket can tell you to add a new file under `docs/report/`; adding that new file is fine, editing an existing report file is not.) If you need a change, say so in your PR and Ayush does it.
 - Don't touch another module's folder without asking Ayush.
 - Don't put AI tool names or "Co-Authored-By" lines in commits, PRs or code comments. Our git rules forbid it (`docs/rules/GitRules.md`). We disclose AI use once, in the report.
 - Don't paste code you cannot explain.
