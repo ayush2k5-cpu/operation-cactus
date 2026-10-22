@@ -99,6 +99,36 @@ def test_cli_prints_zero_alerts_for_empty_pcap(tmp_path, capsys):
     assert "alerts: 0" in out
 
 
+def test_ids_carry_replay_id_and_alerts_reference_detections(tunnel_and_benign):
+    result = run(tunnel_and_benign, replay_id="r1")
+    ids = {d.detection_id for d in result.detections}
+    assert ids and all(i.startswith("r1-") for i in ids)
+    alert = result.alerts[0]
+    assert alert.alert_id.startswith("r1-")
+    assert set(alert.detection_ids) <= ids
+
+
+def test_two_replays_share_no_ids(tunnel_and_benign):
+    a, b = run(tunnel_and_benign), run(tunnel_and_benign)
+    ids_a = {d.detection_id for d in a.detections} | {x.alert_id for x in a.alerts}
+    ids_b = {d.detection_id for d in b.detections} | {x.alert_id for x in b.alerts}
+    assert ids_a and not ids_a & ids_b
+    assert len(a.alerts) == len(b.alerts) == 1
+
+
+def test_threshold_from_env_and_cli_override(tunnel_and_benign, monkeypatch, capsys):
+    monkeypatch.setenv("GATE_THRESHOLD", "0.99")
+    assert run(tunnel_and_benign).alerts == []
+    assert main(["replay", str(tunnel_and_benign), "--threshold", "0.7"]) == 0
+    assert "alerts: 1" in capsys.readouterr().out
+
+
+def test_missing_settings_give_defaults(tunnel_and_benign, monkeypatch):
+    monkeypatch.delenv("GATE_WINDOW_SECONDS", raising=False)
+    monkeypatch.delenv("GATE_THRESHOLD", raising=False)
+    assert len(run(tunnel_and_benign).alerts) == 1
+
+
 DEMO = "data/demo/dns_tunnel_plus_benign.pcap"
 CONTROL = "data/demo/single_signal_control.pcap"
 
