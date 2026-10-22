@@ -20,8 +20,8 @@ Find all your tickets with the label `owner:<your name>` in the GitHub Issues ta
 1. Accept the repo invite (email, or https://github.com/notifications).
 2. Clone and run setup. Windows, in PowerShell:
    ```powershell
-   git clone https://github.com/ayush2k5-cpu/fyp-untitled.git
-   cd fyp-untitled
+   git clone https://github.com/ayush2k5-cpu/operation-cactus.git
+   cd operation-cactus
    Set-ExecutionPolicy -Scope Process Bypass
    .\scripts\setup.ps1
    ```

@@ -1,6 +1,6 @@
 # Issue tracker: GitHub Issues + Projects
 
-Tickets for this repo are GitHub Issues in `ayush2k5-cpu/fyp-untitled`. Use the `gh` CLI. Skills that say "publish to the issue tracker" run `gh issue create`.
+Tickets for this repo are GitHub Issues in `ayush2k5-cpu/operation-cactus`. Use the `gh` CLI. Skills that say "publish to the issue tracker" run `gh issue create`.
 
 ## Conventions
 - One ticket per issue. Title is a short imperative phrase.
@@ -13,7 +13,7 @@ Tickets for this repo are GitHub Issues in `ayush2k5-cpu/fyp-untitled`. Use the 
 
 ## When a skill says "publish to the issue tracker"
 ```bash
-gh issue create --repo ayush2k5-cpu/fyp-untitled --title "<title>" --body-file <file> \
+gh issue create --repo ayush2k5-cpu/operation-cactus --title "<title>" --body-file <file> \
   --label "module:<m>" --label "cycle-<n>" --label "owner:<name>" --milestone "Cycle <n> - ..."
 ```
 Create blockers first so later tickets can reference their numbers.
