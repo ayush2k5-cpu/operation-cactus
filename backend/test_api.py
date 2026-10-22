@@ -134,3 +134,145 @@ def test_delay_setting_paces_the_replay(data_dir, store):
     _, messages = replay_messages(client, "mix.pcap")
     events = len(messages) - 1
     assert time.monotonic() - start >= events * 0.03 * 0.9
+
+
+def test_health_returns_ok(data_dir, store):
+    client = TestClient(create_app(store, data_dir))
+    resp = client.get("/api/health")
+    assert resp.status_code == 200
+    assert resp.json() == {"status": "ok"}
+
+
+def test_list_replays_newest_first(data_dir, store):
+    client = TestClient(create_app(store, data_dir))
+    replay_messages(client, "control.pcap")
+    replay_messages(client, "mix.pcap")
+    resp = client.get("/api/replays")
+    assert resp.status_code == 200
+    records = resp.json()
+    assert len(records) == 2
+    assert records[0]["pcap_name"] == "mix.pcap"
+    assert records[1]["pcap_name"] == "control.pcap"
+
+
+def test_list_replays_limit(data_dir, store):
+    client = TestClient(create_app(store, data_dir))
+    replay_messages(client, "control.pcap")
+    replay_messages(client, "mix.pcap")
+    resp = client.get("/api/replays", params={"limit": 1})
+    assert resp.status_code == 200
+    assert len(resp.json()) == 1
+
+
+def test_list_detections_filter_by_replay(data_dir, store):
+    client = TestClient(create_app(store, data_dir))
+    first, _ = replay_messages(client, "mix.pcap")
+    second, _ = replay_messages(client, "control.pcap")
+    resp = client.get("/api/detections", params={"replay_id": first})
+    assert resp.status_code == 200
+    ids = {d["detection_id"] for d in resp.json()}
+    assert all(i.startswith(first) for i in ids)
+    assert not any(i.startswith(second) for i in ids)
+
+
+def test_list_detections_includes_single_signal(data_dir, store):
+    build(data_dir / "single.pcap", [("10.0.0.8", benign_labels(30), [0.1])])
+    client = TestClient(create_app(store, data_dir))
+    replay_id, _ = replay_messages(client, "single.pcap")
+    resp = client.get("/api/detections", params={"replay_id": replay_id})
+    assert resp.status_code == 200
+    assert len(resp.json()) > 0
+    assert client.get("/api/alerts", params={"replay_id": replay_id}).json() == []
+
+
+def test_list_detections_limit(data_dir, store):
+    client = TestClient(create_app(store, data_dir))
+    replay_messages(client, "mix.pcap")
+    resp = client.get("/api/detections", params={"limit": 1})
+    assert resp.status_code == 200
+    assert len(resp.json()) == 1
+
+
+def test_list_alerts_filter_by_replay(data_dir, store):
+    client = TestClient(create_app(store, data_dir))
+    first, _ = replay_messages(client, "mix.pcap")
+    second, _ = replay_messages(client, "mix.pcap")
+    resp_first = client.get("/api/alerts", params={"replay_id": first})
+    resp_second = client.get("/api/alerts", params={"replay_id": second})
+    assert resp_first.status_code == 200
+    assert resp_second.status_code == 200
+    assert len(resp_first.json()) == 1
+    assert len(resp_second.json()) == 1
+    assert resp_first.json()[0]["alert_id"] != resp_second.json()[0]["alert_id"]
+
+
+def test_close_alert_ok(data_dir, store):
+    client = TestClient(create_app(store, data_dir))
+    replay_id, _ = replay_messages(client, "mix.pcap")
+    alerts = client.get("/api/alerts", params={"replay_id": replay_id}).json()
+    alert_id = alerts[0]["alert_id"]
+    resp = client.post(f"/api/alerts/{alert_id}/close")
+    assert resp.status_code == 200
+    assert resp.json() == {"status": "closed"}
+    updated = client.get("/api/alerts", params={"replay_id": replay_id}).json()
+    assert updated[0]["status"] == "closed"
+
+
+def test_close_alert_unknown_gives_404(data_dir, store):
+    client = TestClient(create_app(store, data_dir))
+    resp = client.post("/api/alerts/no-such-alert/close")
+    assert resp.status_code == 404
+
+
+def test_close_alert_already_closed_gives_409(data_dir, store):
+    client = TestClient(create_app(store, data_dir))
+    replay_id, _ = replay_messages(client, "mix.pcap")
+    alerts = client.get("/api/alerts", params={"replay_id": replay_id}).json()
+    alert_id = alerts[0]["alert_id"]
+    client.post(f"/api/alerts/{alert_id}/close")
+    resp = client.post(f"/api/alerts/{alert_id}/close")
+    assert resp.status_code == 409
+
+
+def test_close_alert_allows_same_entity_to_alert_again(data_dir, store):
+    client = TestClient(create_app(store, data_dir))
+    first_id, _ = replay_messages(client, "mix.pcap")
+    alerts_before = client.get("/api/alerts", params={"replay_id": first_id}).json()
+    alert_id = alerts_before[0]["alert_id"]
+    client.post(f"/api/alerts/{alert_id}/close")
+    second_id, _ = replay_messages(client, "mix.pcap")
+    alerts_after = client.get("/api/alerts", params={"replay_id": second_id}).json()
+    assert len(alerts_after) == 1
+
+
+def test_list_pcaps_returns_sorted_names(data_dir, store):
+    client = TestClient(create_app(store, data_dir))
+    resp = client.get("/api/pcaps")
+    assert resp.status_code == 200
+    names = resp.json()
+    assert names == sorted(names)
+    assert "mix.pcap" in names
+    assert "control.pcap" in names
+
+
+def test_list_pcaps_empty_dir(tmp_path, store):
+    empty = tmp_path / "empty"
+    empty.mkdir()
+    client = TestClient(create_app(store, empty))
+    resp = client.get("/api/pcaps")
+    assert resp.status_code == 200
+    assert resp.json() == []
+
+
+def test_list_pcaps_missing_dir(tmp_path, store):
+    missing = tmp_path / "missing"
+    client = TestClient(create_app(store, missing))
+    resp = client.get("/api/pcaps")
+    assert resp.status_code == 200
+    assert resp.json() == []
+
+
+def test_list_pcaps_no_path_traversal(data_dir, store):
+    client = TestClient(create_app(store, data_dir))
+    names = client.get("/api/pcaps").json()
+    assert all("/" not in n and "\\" not in n for n in names)
