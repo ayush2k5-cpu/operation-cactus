@@ -37,7 +37,7 @@ Only Ayush edits `GLOSSARY.md`, `docs/adr/`, `docs/specs/`, `docs/Ledger.md`, `d
 ## Flow (Ayush)
 - Your own tickets follow the same path through `mod/backend`.
 - `scripts/release.py <module>` opens the module-to-main PR with a `Closes #N` line per ticket. Update the shared files, check CI, merge with a merge commit.
-- After each merge to main, a GitHub Action merges `main` back into every `mod/` branch. If a merge conflicts, it opens an issue and you merge that branch by hand.
+- After each merge to main, run `python scripts/sync_modules.py`. It merges `main` back into every `mod/` branch and lists any conflict for you to merge by hand. (A GitHub Action cannot do this: user-owned repos cannot give Actions a ruleset bypass.)
 - Tickets labelled `module:workflow` go to `main` directly by PR, reviewed by you.
 
 ## AI-assisted coding
@@ -67,5 +67,5 @@ gh api -X PUT repos/ayush2k5-cpu/operation-cactus/collaborators/<username> -f pe
 ```
 Module branches already exist (`mod/covertrace`, `mod/flowsight`, `mod/mimicnet`, `mod/backend`, `mod/eval`). The repo is public so branch rulesets are free. They live in `.github/rulesets/` and are applied with `python scripts/apply_rulesets.py`:
 - `main`: no direct pushes, no deletion, no force push, a PR with your approval (as code owner) and green CI, merge commits only. You bypass through a PR.
-- `mod/**`: a PR and green CI, no approval needed (teammates merge their own), merge commits only, no deletion, no force push. The branch-sync Action may bypass.
+- `mod/**`: a PR and green CI, no approval needed (teammates merge their own), merge commits only, no deletion, no force push. You bypass it to sync with `scripts/sync_modules.py`.
 - every branch: no deletion and no force push (you can bypass when you clean up).
