@@ -9,8 +9,8 @@ def main(argv: list[str] | None = None) -> int:
     sub = parser.add_subparsers(dest="command", required=True)
     replay = sub.add_parser("replay", help="replay a pcap through the engine")
     replay.add_argument("pcap")
-    replay.add_argument("--window", type=float, default=60.0, help="gate window in seconds")
-    replay.add_argument("--threshold", type=float, default=0.7, help="gate score threshold")
+    replay.add_argument("--window", type=float, default=None, help="gate window in seconds")
+    replay.add_argument("--threshold", type=float, default=None, help="gate score threshold")
     args = parser.parse_args(argv)
 
     result = run(args.pcap, window_seconds=args.window, threshold=args.threshold)
