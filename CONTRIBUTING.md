@@ -63,7 +63,7 @@ cd dashboard && npm run lint && npm run build
 
 ## Repo setup for Ayush (one time)
 ```bash
-gh api -X PUT repos/ayush2k5-cpu/fyp-untitled/collaborators/<username> -f permission=push   # per teammate
+gh api -X PUT repos/ayush2k5-cpu/operation-cactus/collaborators/<username> -f permission=push   # per teammate
 ```
 Module branches already exist (`mod/covertrace`, `mod/flowsight`, `mod/mimicnet`, `mod/backend`, `mod/eval`). The repo is public so branch rulesets are free. They live in `.github/rulesets/` and are applied with `python scripts/apply_rulesets.py`:
 - `main`: no direct pushes, no deletion, no force push, a PR with your approval (as code owner) and green CI, merge commits only. You bypass through a PR.
