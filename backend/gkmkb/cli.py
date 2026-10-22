@@ -4,6 +4,22 @@ import sys
 from backend.gkmkb.pipeline import run
 
 
+def serve() -> int:
+    import uvicorn
+
+    from backend.gkmkb.api import create_app
+    from backend.gkmkb.settings import load_settings
+    from backend.gkmkb.storage import MemoryStore, MongoStore
+
+    settings = load_settings()
+    if settings.mongo_uri:
+        store = MongoStore(settings.mongo_uri, settings.mongo_db)
+    else:
+        store = MemoryStore()
+    uvicorn.run(create_app(store), host="127.0.0.1", port=8000)
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="gkmkb")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -11,7 +27,11 @@ def main(argv: list[str] | None = None) -> int:
     replay.add_argument("pcap")
     replay.add_argument("--window", type=float, default=None, help="gate window in seconds")
     replay.add_argument("--threshold", type=float, default=None, help="gate score threshold")
+    sub.add_parser("serve", help="start the API on 127.0.0.1")
     args = parser.parse_args(argv)
+
+    if args.command == "serve":
+        return serve()
 
     result = run(args.pcap, window_seconds=args.window, threshold=args.threshold)
     print(f"flows: {result.flows}")
