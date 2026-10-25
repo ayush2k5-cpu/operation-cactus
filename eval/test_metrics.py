@@ -122,3 +122,26 @@ def test_auc_and_roc_points_hand_computed():
     val = auc(y_true, scores)
     assert val is not None
     assert round(val, 2) == 0.75
+
+
+def test_auc_perfect_separation():
+    y_true = [1, 1, 0, 0]
+    scores = [0.9, 0.8, 0.3, 0.2]
+    val = auc(y_true, scores)
+    assert val == 1.0
+
+
+def test_auc_inverted_separation():
+    y_true = [1, 1, 0, 0]
+    scores = [0.1, 0.2, 0.8, 0.9]
+    val = auc(y_true, scores)
+    assert val == 0.0
+
+
+def test_duplicate_scores_hand_computed():
+    y_true = [1, 0]
+    scores = [0.5, 0.5]
+    pts = roc_points(y_true, scores)
+    val = auc(y_true, scores)
+    assert pts == [(0.0, 0.0), (1.0, 1.0)]
+    assert val == 0.5
