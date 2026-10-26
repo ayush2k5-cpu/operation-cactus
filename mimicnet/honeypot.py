@@ -53,6 +53,19 @@ def _is_timeout(exc: Exception) -> bool:
     return isinstance(exc, requests.exceptions.RequestException)
 
 
+def _ensure_image(client: Any, image: str) -> None:
+    """docker-py does not pull on create, so fetch the image when it is missing."""
+    images = getattr(client, "images", None)
+    if images is None:
+        return
+    from docker.errors import ImageNotFound
+
+    try:
+        images.get(image)
+    except ImageNotFound:
+        images.pull(image)
+
+
 def _session(alert_id: str, container_id: str, started: datetime, events: list[dict]):
     parsed = [SessionEvent(**e) for e in events]
     return HoneypotSession(
@@ -89,6 +102,7 @@ def engage(
             import docker
 
             client = docker.from_env()
+        _ensure_image(client, settings.image)
         started = datetime.now(UTC)
         container = client.containers.create(
             settings.image,
