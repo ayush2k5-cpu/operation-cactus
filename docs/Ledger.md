@@ -29,7 +29,7 @@ Status on 2026-10-21, taken from `main` at `ed8f510`. Expands `docs/specs/GkmkbS
 | Retrained Paper 1 baseline | Designed | EvalSpec; ticket #87 | 2026-10-22 | Sharukh |
 | Consent record for captures | Designed | EvalSpec; ticket #83 | 2026-10-22 | Sharukh |
 | Adaptive thresholds | Designed | Spec section 9, Cycle 4; no code | 2026-10-18 | Shivansh |
-| MimicNet honeypot with session recording | Partial | SSH-like fake shell and `engage` in `mimicnet/`; scripted attacker only, fixed banner, Docker path tested with a fake client plus one Docker-marked smoke test; ticket #57 | 2026-10-26 | Shivansh (planned) |
+| MimicNet honeypot with session recording | Designed | MimicNet spec; tickets #57 and #60; `mimicnet/` is empty | 2026-10-22 | Shivansh (planned) |
 | MITRE tagging | Designed | MimicNet spec and EvalSpec; tickets #85 and #86 (#21 closed as superseded) | 2026-10-22 | Sharukh (planned) |
 | Rule generation from sessions | Designed | MimicNet spec; ticket #58 | 2026-10-22 | Shivansh (planned) |
 | Rule loading in CoverTrace | Designed | MimicNet spec; ticket #58 | 2026-10-22 | Shivansh (planned) |
