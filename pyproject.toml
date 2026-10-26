@@ -18,5 +18,6 @@ line-ending = "lf"
 select = ["E4", "E7", "E9", "F", "I"]
 
 [tool.pytest.ini_options]
+markers = ["docker: needs a running Docker daemon; skipped without one"]
 pythonpath = ["."]
 testpaths = ["contracts", "capture", "flowsight", "covertrace", "mimicnet", "backend", "eval", "scripts"]
