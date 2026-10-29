@@ -19,7 +19,7 @@ from backend.gkmkb.storage import (
     ReplayState,
     StorageBase,
 )
-from contracts.models import Alert, Detection, Entity
+from contracts.models import Alert, Detection, Entity, HoneypotSession, MitreTag, SessionEvent
 
 T0 = datetime(2026, 10, 20, 10, 0, 0, tzinfo=UTC)
 MONGO_URI = os.environ.get("MONGO_URI", "")
@@ -282,3 +282,53 @@ def test_save_replay_upsert(store_fixture, request):
     rows = store.list_replays()
     assert len(rows) == 1
     assert rows[0].flow_count == 99
+
+
+def _session(
+    session_id: str = "s-001",
+    alert_id: str = "run1-alert-0001",
+) -> HoneypotSession:
+    return HoneypotSession(
+        session_id=session_id,
+        alert_id=alert_id,
+        service="ssh",
+        container_id="abc123",
+        started=T0,
+        events=[
+            SessionEvent(ts=T0 + timedelta(seconds=2), type="command", data={"cmd": "whoami"}),
+            SessionEvent(ts=T0, type="connect", data={"src": "10.0.0.5"}),
+        ],
+        mitre=[
+            MitreTag(technique_id="T1033", name="System Owner/User Discovery", evidence="whoami"),
+        ],
+    )
+
+
+@pytest.mark.parametrize("store_fixture", STORE_FIXTURES)
+def test_save_and_get_session(store_fixture, request):
+    store: StorageBase = request.getfixturevalue(store_fixture)
+    s = _session()
+    store.save_session(s)
+    got = store.get_session("s-001")
+    assert got is not None
+    assert got.session_id == "s-001"
+    assert got.alert_id == "run1-alert-0001"
+    assert len(got.events) == 2
+
+
+@pytest.mark.parametrize("store_fixture", STORE_FIXTURES)
+def test_get_session_missing_returns_none(store_fixture, request):
+    store: StorageBase = request.getfixturevalue(store_fixture)
+    assert store.get_session("nonexistent") is None
+
+
+@pytest.mark.parametrize("store_fixture", STORE_FIXTURES)
+def test_save_session_upsert(store_fixture, request):
+    store: StorageBase = request.getfixturevalue(store_fixture)
+    s = _session()
+    store.save_session(s)
+    updated = s.model_copy(update={"service": "telnet"})
+    store.save_session(updated)
+    got = store.get_session("s-001")
+    assert got is not None
+    assert got.service == "telnet"

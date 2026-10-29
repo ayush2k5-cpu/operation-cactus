@@ -1,9 +1,13 @@
+import time
+from datetime import UTC, datetime, timedelta
+
 import pytest
 from fastapi.testclient import TestClient
 
 from backend.gkmkb.api import create_app
 from backend.gkmkb.storage import MemoryStore, ReplayState
 from backend.test_pipeline import benign_labels, build, tunnel_labels
+from contracts.models import HoneypotSession, MitreTag, SessionEvent
 
 
 @pytest.fixture
@@ -127,8 +131,6 @@ def replay_messages_after_reconnect(client):
 
 
 def test_delay_setting_paces_the_replay(data_dir, store):
-    import time
-
     client = TestClient(create_app(store, data_dir, event_delay_ms=30))
     start = time.monotonic()
     _, messages = replay_messages(client, "mix.pcap")
@@ -276,3 +278,65 @@ def test_list_pcaps_no_path_traversal(data_dir, store):
     client = TestClient(create_app(store, data_dir))
     names = client.get("/api/pcaps").json()
     assert all("/" not in n and "\\" not in n for n in names)
+
+
+def _make_session(store, session_id="s-001", alert_id="run1-alert-0001"):
+    t0 = datetime(2026, 10, 20, 10, 0, 0, tzinfo=UTC)
+    session = HoneypotSession(
+        session_id=session_id,
+        alert_id=alert_id,
+        service="ssh",
+        container_id="abc123",
+        started=t0,
+        events=[
+            SessionEvent(ts=t0 + timedelta(seconds=5), type="command", data={"cmd": "id"}),
+            SessionEvent(ts=t0, type="connect", data={"src": "10.0.0.5"}),
+        ],
+        mitre=[
+            MitreTag(technique_id="T1033", name="System Owner/User Discovery", evidence="id"),
+        ],
+    )
+    store.save_session(session)
+    return session
+
+
+def test_get_session_returns_events_in_time_order(data_dir, store):
+    client = TestClient(create_app(store, data_dir))
+    _make_session(store)
+    resp = client.get("/api/sessions/s-001")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["session_id"] == "s-001"
+    assert data["events"][0]["type"] == "connect"
+    assert data["events"][1]["type"] == "command"
+    assert len(data["mitre"]) == 1
+    assert data["mitre"][0]["technique_id"] == "T1033"
+
+
+def test_get_session_unknown_gives_404(data_dir, store):
+    client = TestClient(create_app(store, data_dir))
+    resp = client.get("/api/sessions/no-such-session")
+    assert resp.status_code == 404
+
+
+def test_session_event_broadcast_over_websocket(data_dir, store):
+    t0 = datetime(2026, 10, 20, 10, 0, 0, tzinfo=UTC)
+    session = HoneypotSession(
+        session_id="s-live",
+        alert_id="run1-alert-0001",
+        service="ssh",
+        container_id="ctr1",
+        started=t0,
+    )
+    store.save_session(session)
+    event = SessionEvent(ts=t0, type="connect", data={"src": "10.0.0.5"})
+
+    client = TestClient(create_app(store, data_dir))
+    with client.websocket_connect("/ws/events") as ws:
+        time.sleep(0.05)
+        client.app.state.publish_session_event("s-live", event.model_dump(mode="json"))
+        msg = ws.receive_json()
+
+    assert msg["type"] == "session_event"
+    assert msg["session_id"] == "s-live"
+    assert msg["data"]["type"] == "connect"
