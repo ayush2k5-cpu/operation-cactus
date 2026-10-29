@@ -59,7 +59,9 @@ Test status: about 180 automated tests pass on the main branch; CI runs them on 
 
 Before the review: Docker Desktop running, laptop on power, run the setup once (`scripts/setup.ps1`). Run step 1 and 2 once beforehand: the first honeypot run downloads the `python:3.12-slim` image and takes longer.
 
-Start two terminals from the repo root (PowerShell):
+**Automatic run.** `python scripts/demo.py` runs every step below by itself (command line, backend API, honeypot, evaluation) and prints PASS or FAIL for each. Use it the evening before and an hour before the review. `python scripts/demo.py --console` also starts the Console, opens it in the browser and keeps running until Ctrl+C. Add `--no-honeypot` if Docker is not running. Run it with the project Python: `.\.venv\Scripts\python.exe scripts/demo.py`.
+
+To run the steps by hand, start two terminals from the repo root (PowerShell):
 
 ```powershell
 $env:HONEYPOT_ENGAGE="1"; $env:DATA_DIR="data/demo"; $env:REPLAY_EVENT_DELAY_MS="400"
