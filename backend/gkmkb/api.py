@@ -187,6 +187,21 @@ def create_app(
         names = sorted(p.name for p in root.iterdir() if p.is_file())
         return names
 
+    @app.get("/api/sessions/{session_id}")
+    def get_session(session_id: str) -> dict:
+        session = store.get_session(session_id)
+        if session is None:
+            raise HTTPException(404, "session not found")
+        data = session.model_dump(mode="json")
+        data["events"] = sorted(data["events"], key=lambda e: e["ts"])
+        return data
+
+    def publish_session_event(session_id: str, event: dict) -> None:
+        """Push one session event to all connected WebSocket clients."""
+        hub.publish({"type": "session_event", "session_id": session_id, "data": event})
+
+    app.state.publish_session_event = publish_session_event
+
     @app.websocket("/ws/events")
     async def events(ws: WebSocket) -> None:
         await ws.accept()
