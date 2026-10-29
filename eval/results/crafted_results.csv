@@ -1,0 +1,4 @@
+dataset_type,data_label,seed,target,hits,misses,false_alarms,true_negatives,precision,precision_raw,recall,recall_raw,f1,f1_raw,false_alarm_rate,false_alarm_rate_raw,time_to_first_detection_mean_s
+crafted,synthetic,42,covertrace,1,0,0,1,1.0000,1/1,1.0000,1/1,1.0000,2/2,0.0000,0/1,79.1058
+crafted,synthetic,42,flowsight [stub],1,0,0,1,1.0000,1/1,1.0000,1/1,1.0000,2/2,0.0000,0/1,79.1058
+crafted,synthetic,42,gate,1,0,0,1,1.0000,1/1,1.0000,1/1,1.0000,2/2,0.0000,0/1,79.1058
