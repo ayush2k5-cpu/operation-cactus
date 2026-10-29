@@ -104,10 +104,10 @@ export function Compare({ replays, onBack }: { replays: ReplayRecord[]; onBack: 
         <BarChart width={420} height={240} data={chartData} aria-label="Threshold compare chart">
           <XAxis dataKey="name" />
           <YAxis domain={[0, 1]} />
-          <Tooltip />
+          <Tooltip contentStyle={{ background: "#0d0d2b", border: "1px solid #444" }} cursor={{ fill: "rgba(255,255,255,0.05)" }} />
           <Legend />
-          <Bar dataKey="threshold_used" isAnimationActive={false} />
-          <Bar dataKey="score" isAnimationActive={false} />
+          <Bar dataKey="threshold_used" fill="#8a8ab8" isAnimationActive={false} />
+          <Bar dataKey="score" fill="#3a3aff" isAnimationActive={false} />
         </BarChart>
       )}
       {chosen.map((s) => (

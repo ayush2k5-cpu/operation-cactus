@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import {
   ApiError,
   type Alert,
@@ -21,6 +21,7 @@ import {
   type Replay,
 } from "./api/live";
 import { Compare } from "./Compare";
+import "./styles.css";
 
 const BACKEND_DOWN = "Backend is down. Start the backend and try again.";
 const BUSY = "A replay is already running. Wait for it to finish, then start again.";
@@ -69,6 +70,89 @@ function closeError(err: unknown): string {
   return BACKEND_DOWN;
 }
 
+function Signal({ running }: { running: boolean }) {
+  const spokes = Array.from({ length: 72 }, (_, i) => ({
+    angle: i * 5,
+    from: 28 + (i % 5) * 6,
+    to: 110 + ((i * 37) % 80),
+  }));
+  return (
+    <svg className="signal" data-running={running} viewBox="-200 -200 400 400" aria-hidden="true">
+      <defs>
+        <linearGradient id="sweep" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stopColor="#0000f2" stopOpacity="0" />
+          <stop offset="1" stopColor="#3a3aff" stopOpacity="0.85" />
+        </linearGradient>
+      </defs>
+      {[60, 110, 160, 195].map((r) => (
+        <circle key={r} className="ring" r={r} />
+      ))}
+      <g className="spokes">
+        {spokes.map((sp) => (
+          <line key={sp.angle} x1={sp.from} x2={sp.to} transform={`rotate(${sp.angle})`} />
+        ))}
+      </g>
+      <g className="spokes spokes-rev">
+        {spokes.filter((_, i) => i % 3 === 0).map((sp) => (
+          <line key={sp.angle} x1={sp.from + 20} x2={sp.to + 30} transform={`rotate(${sp.angle + 2})`} />
+        ))}
+      </g>
+      <path className="sweep" d="M0 0 L195 0 A195 195 0 0 0 168.9 -97.5 Z" fill="url(#sweep)" />
+      <circle className="blip" cx="90" cy="-70" r="4" />
+      <circle className="blip" cx="-120" cy="40" r="4" style={{ animationDelay: "0.8s" }} />
+      <circle className="blip" cx="30" cy="140" r="4" style={{ animationDelay: "1.6s" }} />
+      <circle className="core" r="6" />
+    </svg>
+  );
+}
+
+type ShellProps = { live?: boolean; running?: boolean; nav?: ReactNode; children: ReactNode };
+
+function Shell({ live, running = false, nav, children }: ShellProps) {
+  return (
+    <div className="shell">
+      <header className="topbar">
+        <span className="brand">
+          GKMKB
+          <br />
+          Console
+        </span>
+        <span className="spacer" />
+        {live !== undefined && (
+          <span className="tag" data-live={live}>
+            {live ? "Live" : "Offline"}
+          </span>
+        )}
+      </header>
+      <div className="hero">
+        <div className="hero-text">
+          <p className="eyebrow">Detection middleware</p>
+          <h1>GKMKB Console</h1>
+          {nav}
+        </div>
+        <Signal running={running} />
+      </div>
+      <main>{children}</main>
+    </div>
+  );
+}
+
+function Counts({ flows, detections, alerts }: { flows: number; detections: number; alerts: number }) {
+  return (
+    <ul aria-label="Replay counts">
+      <li>
+        Flows: <b>{flows}</b>
+      </li>
+      <li>
+        Detections: <b>{detections}</b>
+      </li>
+      <li>
+        Alerts: <b>{alerts}</b>
+      </li>
+    </ul>
+  );
+}
+
 function isRuleHit(d: Detection): boolean {
   return d.score === 1.0 && d.label.startsWith("rule:");
 }
@@ -77,7 +161,7 @@ function DetectionItem({ d }: { d: Detection }) {
   const rule = isRuleHit(d);
   const featureEntries = Object.entries(d.features);
   return (
-    <li data-rule={rule || undefined}>
+    <li data-rule={rule || undefined} className="detection">
       <span>
         {d.source} {d.label} score {d.score.toFixed(2)} on {d.entity.src_ip} to{" "}
         {d.entity.dst_ip}
@@ -105,7 +189,7 @@ type AlertRowProps = {
 
 function AlertRow({ a, onClose, closeMsg }: AlertRowProps) {
   return (
-    <li>
+    <li data-severity={a.severity} className="alert-row" data-status={a.status}>
       {a.severity} Alert on {a.entity.src_ip} to {a.entity.dst_ip} ({a.status})
       {a.status === "open" && (
         <button onClick={() => onClose(a.alert_id)}>Close</button>
@@ -160,11 +244,11 @@ function ReplayDetail({ record, onBack, backendDown }: ReplayDetailProps) {
         Replay {record.replay_id} ({record.pcap_name}): {record.state}
       </h2>
       {record.state !== "running" && (
-        <ul aria-label="Replay counts">
-          <li>Flows: {record.flow_count}</li>
-          <li>Detections: {record.detection_count}</li>
-          <li>Alerts: {record.alert_count}</li>
-        </ul>
+        <Counts
+          flows={record.flow_count}
+          detections={record.detection_count}
+          alerts={record.alert_count}
+        />
       )}
       {loadErr && <p role="alert">{loadErr}</p>}
 
@@ -300,10 +384,15 @@ export function App({ reconnectMs = 1000 }: { reconnectMs?: number }) {
 
   if (view.kind === "replays") {
     return (
-      <main>
-        <h1>GKMKB Console</h1>
-        <button onClick={() => setView({ kind: "live" })}>Live view</button>
-        <button onClick={() => setView({ kind: "compare" })}>Compare thresholds</button>
+      <Shell
+        live={!socketDown}
+        nav={
+          <nav className="tabs">
+            <button onClick={() => setView({ kind: "live" })}>Live view</button>
+            <button onClick={() => setView({ kind: "compare" })}>Compare thresholds</button>
+          </nav>
+        }
+      >
         <h2>Past Replays</h2>
         {replaysErr && <p role="alert">{replaysErr}</p>}
         {replays.length === 0 && !replaysErr && <p>No past replays.</p>}
@@ -320,39 +409,44 @@ export function App({ reconnectMs = 1000 }: { reconnectMs?: number }) {
             </li>
           ))}
         </ul>
-      </main>
+      </Shell>
     );
   }
 
   if (view.kind === "compare") {
     return (
-      <main>
-        <h1>GKMKB Console</h1>
+      <Shell live={!socketDown}>
         <Compare replays={replays} onBack={() => setView({ kind: "replays" })} />
-      </main>
+      </Shell>
     );
   }
 
   if (view.kind === "replay") {
     return (
-      <main>
-        <h1>GKMKB Console</h1>
+      <Shell live={!socketDown}>
         <ReplayDetail
           record={view.record}
           onBack={() => setView({ kind: "replays" })}
           backendDown={!!error}
         />
-      </main>
+      </Shell>
     );
   }
 
   return (
-    <main>
-      <h1>GKMKB Console</h1>
+    <Shell
+      live={!socketDown}
+      running={replay?.state === "running"}
+      nav={
+        <nav className="tabs">
+          <button onClick={openReplays}>Past Replays</button>
+        </nav>
+      }
+    >
       {socketDown && <p role="status">Live feed disconnected. Reconnecting...</p>}
       {error && <p role="alert">{error}</p>}
 
-      <section>
+      <section className="picker">
         <label>
           Pcap
           <select value={selected} onChange={(e) => setSelected(e.target.value)}>
@@ -367,7 +461,6 @@ export function App({ reconnectMs = 1000 }: { reconnectMs?: number }) {
         {pcaps.length === 0 && <p>No pcaps found in the data folder.</p>}
       </section>
 
-      <button onClick={openReplays}>Past Replays</button>
 
       {replay && (
         <section>
@@ -376,11 +469,11 @@ export function App({ reconnectMs = 1000 }: { reconnectMs?: number }) {
           </h2>
           {replay.state === "failed" && <p role="alert">Replay failed: {replay.error}</p>}
           {counts && (
-            <ul aria-label="Replay counts">
-              <li>Flows: {counts.flow_count}</li>
-              <li>Detections: {counts.detection_count}</li>
-              <li>Alerts: {counts.alert_count}</li>
-            </ul>
+            <Counts
+              flows={counts.flow_count}
+              detections={counts.detection_count}
+              alerts={counts.alert_count}
+            />
           )}
         </section>
       )}
@@ -409,6 +502,6 @@ export function App({ reconnectMs = 1000 }: { reconnectMs?: number }) {
           ))}
         </ul>
       </section>
-    </main>
+    </Shell>
   );
 }
