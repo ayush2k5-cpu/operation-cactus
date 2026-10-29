@@ -12,6 +12,7 @@ class Settings:
     data_dir: str = "data"
     mongo_uri: str = ""
     mongo_db: str = "gkmkb"
+    api_host: str = "127.0.0.1"
 
 
 def load_settings() -> Settings:
@@ -27,4 +28,5 @@ def load_settings() -> Settings:
         data_dir=os.environ.get("DATA_DIR") or defaults.data_dir,
         mongo_uri=os.environ.get("MONGO_URI") or defaults.mongo_uri,
         mongo_db=os.environ.get("MONGO_DB") or defaults.mongo_db,
+        api_host=os.environ.get("API_HOST") or defaults.api_host,
     )
