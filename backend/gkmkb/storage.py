@@ -1,4 +1,4 @@
-"""Storage interface for Detections, Alerts and replay records (ADR 0005).
+"""Storage interface for Detections, Alerts, HoneypotSessions and replay records (ADR 0005).
 
 Two implementations ship here:
 - ``MemoryStore``: in-memory, no dependencies; always used in tests.
@@ -15,7 +15,7 @@ from enum import Enum
 
 from pydantic import BaseModel
 
-from contracts.models import Alert, Detection
+from contracts.models import Alert, Detection, HoneypotSession
 
 
 class ReplayState(str, Enum):
@@ -99,6 +99,14 @@ class StorageBase(ABC):
             CloseResult.already_closed – Alert exists but was already closed.
         """
 
+    @abstractmethod
+    def save_session(self, session: HoneypotSession) -> None:
+        """Insert or replace a HoneypotSession."""
+
+    @abstractmethod
+    def get_session(self, session_id: str) -> HoneypotSession | None:
+        """Return one HoneypotSession by id, or None if not found."""
+
 
 class MemoryStore(StorageBase):
     """In-memory store. No I/O, no dependencies. Safe to use in every test."""
@@ -108,6 +116,7 @@ class MemoryStore(StorageBase):
         self._replay_order: list[str] = []
         self._detections: list[tuple[Detection, str]] = []
         self._alerts: list[tuple[Alert, str]] = []
+        self._sessions: dict[str, HoneypotSession] = {}
 
     def save_replay(self, record: ReplayRecord) -> None:
         if record.replay_id not in self._replays:
@@ -164,6 +173,12 @@ class MemoryStore(StorageBase):
                 return CloseResult.ok
         return CloseResult.not_found
 
+    def save_session(self, session: HoneypotSession) -> None:
+        self._sessions[session.session_id] = session
+
+    def get_session(self, session_id: str) -> HoneypotSession | None:
+        return self._sessions.get(session_id)
+
 
 class MongoStore(StorageBase):
     """MongoDB-backed store (ADR 0005). Requires a running mongod.
@@ -180,11 +195,13 @@ class MongoStore(StorageBase):
         self._replays_col = db["replays"]
         self._detections_col = db["detections"]
         self._alerts_col = db["alerts"]
+        self._sessions_col = db["sessions"]
         self._replays_col.create_index([("started", pymongo.DESCENDING)])
         self._detections_col.create_index([("ts", pymongo.DESCENDING)])
         self._detections_col.create_index("replay_id")
         self._alerts_col.create_index([("ts", pymongo.DESCENDING)])
         self._alerts_col.create_index("replay_id")
+        self._sessions_col.create_index("session_id", unique=True)
 
     def close(self) -> None:
         self._client.close()
@@ -250,3 +267,13 @@ class MongoStore(StorageBase):
             return CloseResult.already_closed
         self._alerts_col.update_one({"alert_id": alert_id}, {"$set": {"status": "closed"}})
         return CloseResult.ok
+
+    def save_session(self, session: HoneypotSession) -> None:
+        doc = session.model_dump(mode="json")
+        self._sessions_col.replace_one({"session_id": session.session_id}, doc, upsert=True)
+
+    def get_session(self, session_id: str) -> HoneypotSession | None:
+        doc = self._sessions_col.find_one({"session_id": session_id}, {"_id": 0})
+        if doc is None:
+            return None
+        return HoneypotSession.model_validate(doc)
