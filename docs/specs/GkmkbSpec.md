@@ -95,7 +95,7 @@ Full evidence is in `docs/Ledger.md`; this table keeps the states in step with i
 | CoverTrace | Partial: entry point, settings file and the DNS entropy checker; no other checkers yet |
 | Adaptive thresholds | Designed |
 | Correlation gate | Working (backend tests; the demo alert now rests on two real detectors) |
-| MimicNet honeypot, session recording | Partial: SSH-like shell and `engage` in one locked-down container, tested in CI; scripted attacker only, not started from an Alert yet |
+| MimicNet honeypot, session recording | Partial: SSH-like shell and `engage` in one locked-down container, tested in CI; scripted attacker only; started from an Alert by the backend when `HONEYPOT_ENGAGE=1`, off by default |
 | MITRE mapping | Designed |
 | Fingerprint evasion | Designed |
 | Rule generation, rule loading, closed-loop rules | Designed |
@@ -103,7 +103,7 @@ Full evidence is in `docs/Ledger.md`; this table keeps the states in step with i
 | Paper 1 baseline retrain, MITRE table, consent record | Designed |
 | Backend API, WebSocket, storage | Partial: replay API, live events, REST lists, sessions, in-memory store; Mongo store not tested against a real database |
 | Compose stack (Mongo and backend) | Partial: run by hand on one laptop, not on a clean machine |
-| Dashboard | Partial: replay start, live feed, Alerts, Detections, Replays, threshold compare, styled; no Rules view or session timeline |
+| Dashboard | Partial: replay start, live feed, Alerts, Detections, Replays, threshold compare, session view for an engaged Alert, styled; no Rules view, no MITRE tags |
 
 ## 9. Cycles
 Final date not fixed; each cycle ends with something demonstrable.
