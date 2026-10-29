@@ -85,19 +85,25 @@ Detail: `docs/specs/EvalSpec.md` (merged 2026-10-22, tickets #81 to #91).
 - Every number reproducible by `eval/` scripts with a fixed seed.
 
 ## 8. Honesty ledger (update with every merged PR)
-| Capability | State on 2026-10-18 |
+Full evidence is in `docs/Ledger.md`; this table keeps the states in step with it.
+
+| Capability | State on 2026-10-30 |
 |---|---|
-| Replay capture | Designed |
+| Replay capture | Working |
 | C + libpcap capture | Designed (stretch, ADR 0001) |
-| FlowSight features and classifier | Partial: paper has a synthetic benchmark only |
-| CoverTrace indicators | Partial: paper has synthetic features only |
+| FlowSight | Partial: window features and a rule-based scorer in the pipeline; no classifier, no real-traffic result |
+| CoverTrace | Partial: entry point, settings file and the DNS entropy checker; no other checkers yet |
 | Adaptive thresholds | Designed |
-| Correlation gate | Working (PR 36, tests in the backend folder; tried only against the FlowSight stub) |
-| MimicNet honeypot, MITRE mapping | Designed |
+| Correlation gate | Working (backend tests; the demo alert now rests on two real detectors) |
+| MimicNet honeypot, session recording | Partial: SSH-like shell and `engage` in one locked-down container, tested in CI; scripted attacker only, not started from an Alert yet |
+| MITRE mapping | Designed |
 | Fingerprint evasion | Designed |
-| Closed-loop rules | Designed |
-| Evaluation harness, Paper 1 baseline, MITRE table | Designed (spec merged 2026-10-22, tickets #81 to #91) |
-| Dashboard | Designed (spec merged 2026-10-22, tickets #70 to #78; UI mock prompts exist) |
+| Rule generation, rule loading, closed-loop rules | Designed |
+| Evaluation harness | Partial: labels, metric functions and a runner on crafted pcaps; synthetic data only |
+| Paper 1 baseline retrain, MITRE table, consent record | Designed |
+| Backend API, WebSocket, storage | Partial: replay API, live events, REST lists, sessions, in-memory store; Mongo store not tested against a real database |
+| Compose stack (Mongo and backend) | Partial: run by hand on one laptop, not on a clean machine |
+| Dashboard | Partial: replay start, live feed, Alerts, Detections, Replays, threshold compare, styled; no Rules view or session timeline |
 
 ## 9. Cycles
 Final date not fixed; each cycle ends with something demonstrable.
