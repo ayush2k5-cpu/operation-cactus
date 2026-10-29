@@ -91,6 +91,20 @@ def test_cli_prints_alert_and_no_stub_note(tunnel_and_benign, capsys):
     assert "[stub]" not in out
 
 
+def test_cli_reports_a_file_that_is_not_a_pcap(tmp_path, capsys):
+    junk = tmp_path / "junk.pcap"
+    junk.write_bytes(b"not a pcap")
+    assert main(["replay", str(junk)]) == 2
+    captured = capsys.readouterr()
+    assert "junk.pcap" in captured.err
+    assert "alerts:" not in captured.out
+
+
+def test_cli_reports_a_missing_file(tmp_path, capsys):
+    assert main(["replay", str(tmp_path / "nope.pcap")]) == 2
+    assert "nope.pcap" in capsys.readouterr().err
+
+
 def test_cli_prints_zero_alerts_for_empty_pcap(tmp_path, capsys):
     empty = tmp_path / "empty.pcap"
     empty.write_bytes(b"")
