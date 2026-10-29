@@ -20,6 +20,7 @@ import {
   type LiveMessage,
   type Replay,
 } from "./api/live";
+import { Compare } from "./Compare";
 
 const BACKEND_DOWN = "Backend is down. Start the backend and try again.";
 const BUSY = "A replay is already running. Wait for it to finish, then start again.";
@@ -191,7 +192,11 @@ function ReplayDetail({ record, onBack, backendDown }: ReplayDetailProps) {
   );
 }
 
-type View = { kind: "live" } | { kind: "replays" } | { kind: "replay"; record: ReplayRecord };
+type View =
+  | { kind: "live" }
+  | { kind: "replays" }
+  | { kind: "compare" }
+  | { kind: "replay"; record: ReplayRecord };
 
 export function App({ reconnectMs = 1000 }: { reconnectMs?: number }) {
   const [pcaps, setPcaps] = useState<string[]>([]);
@@ -298,6 +303,7 @@ export function App({ reconnectMs = 1000 }: { reconnectMs?: number }) {
       <main>
         <h1>GKMKB Console</h1>
         <button onClick={() => setView({ kind: "live" })}>Live view</button>
+        <button onClick={() => setView({ kind: "compare" })}>Compare thresholds</button>
         <h2>Past Replays</h2>
         {replaysErr && <p role="alert">{replaysErr}</p>}
         {replays.length === 0 && !replaysErr && <p>No past replays.</p>}
@@ -314,6 +320,15 @@ export function App({ reconnectMs = 1000 }: { reconnectMs?: number }) {
             </li>
           ))}
         </ul>
+      </main>
+    );
+  }
+
+  if (view.kind === "compare") {
+    return (
+      <main>
+        <h1>GKMKB Console</h1>
+        <Compare replays={replays} onBack={() => setView({ kind: "replays" })} />
       </main>
     );
   }
