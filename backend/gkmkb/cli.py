@@ -48,7 +48,7 @@ def main(argv: list[str] | None = None) -> int:
             f"severity={a.severity}  detections={','.join(a.detection_ids)}"
         )
     if any("[stub]" in d.label for d in result.detections):
-        print("note: FlowSight is a [stub] until the real detector lands; CoverTrace is real")
+        print("note: a [stub] detector fired; its output is not a capability")
     return 0
 
 

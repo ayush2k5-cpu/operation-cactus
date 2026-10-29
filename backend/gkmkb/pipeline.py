@@ -7,10 +7,10 @@ from uuid import uuid4
 
 from backend.gkmkb.gate import Gate
 from backend.gkmkb.settings import load_settings
-from backend.gkmkb.stubs import FlowSightStub
 from capture.replay import ReplaySource
 from contracts.models import Alert, Detection, FlowRecord
 from covertrace.dns import DnsEntropyConfig, DnsEntropyDetector
+from flowsight.detector import FlowSight, FlowSightConfig
 
 
 @dataclass
@@ -21,9 +21,9 @@ class Result:
 
 
 def default_detectors(window_seconds: float) -> list:
-    """Fresh detectors for one replay. FlowSight is a [stub] until the real one lands."""
+    """Fresh detectors for one replay."""
     return [
-        FlowSightStub(window_seconds=window_seconds),
+        FlowSight(FlowSightConfig(window_seconds=window_seconds)),
         DnsEntropyDetector(DnsEntropyConfig(window_seconds=window_seconds)),
     ]
 
