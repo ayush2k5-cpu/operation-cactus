@@ -1,0 +1,4 @@
+# Labels for dns_tunnel_plus_benign.pcap (crafted lab data, seed 42)
+src_ip,dst_ip,label
+10.0.1.10,10.0.0.53,benign
+10.0.2.20,10.0.0.53,tunnel
