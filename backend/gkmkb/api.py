@@ -15,7 +15,7 @@ from backend.gkmkb.pipeline import default_detectors, stream
 from backend.gkmkb.settings import load_settings
 from backend.gkmkb.storage import CloseResult, ReplayRecord, ReplayState, StorageBase
 from capture.replay import ReplaySource
-from contracts.models import Alert
+from contracts.models import Alert, Detection
 
 _LIST_DEFAULT = 50
 _LIST_MAX = 500
@@ -145,12 +145,12 @@ def create_app(
         threading.Thread(target=run_replay, args=(replay_id, pcap), daemon=True).start()
         return {"replay_id": replay_id}
 
-    @app.get("/api/replays")
+    @app.get("/api/replays", response_model=list[ReplayRecord])
     def list_replays(limit: int = _LIST_DEFAULT) -> list[dict]:
         limit = min(limit, _LIST_MAX)
         return [r.model_dump(mode="json") for r in store.list_replays(limit=limit)]
 
-    @app.get("/api/detections")
+    @app.get("/api/detections", response_model=list[Detection])
     def list_detections(replay_id: str | None = None, limit: int = _LIST_DEFAULT) -> list[dict]:
         limit = min(limit, _LIST_MAX)
         return [
@@ -158,7 +158,7 @@ def create_app(
             for d in store.list_detections(replay_id=replay_id, limit=limit)
         ]
 
-    @app.get("/api/alerts")
+    @app.get("/api/alerts", response_model=list[Alert])
     def list_alerts(replay_id: str | None = None, limit: int = _LIST_DEFAULT) -> list[dict]:
         limit = min(limit, _LIST_MAX)
         return [
