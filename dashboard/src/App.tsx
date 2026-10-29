@@ -11,6 +11,7 @@ import {
   listReplays,
   startReplay,
 } from "./api/client";
+import { SessionView } from "./Session";
 import {
   applyMessage,
   emptyFeed,
@@ -188,13 +189,20 @@ type AlertRowProps = {
 };
 
 function AlertRow({ a, onClose, closeMsg }: AlertRowProps) {
+  const [showSession, setShowSession] = useState(false);
   return (
     <li data-severity={a.severity} className="alert-row" data-status={a.status}>
       {a.severity} Alert on {a.entity.src_ip} to {a.entity.dst_ip} ({a.status})
       {a.status === "open" && (
         <button onClick={() => onClose(a.alert_id)}>Close</button>
       )}
+      {a.session_id && (
+        <button onClick={() => setShowSession((v) => !v)}>
+          {showSession ? "Hide session" : "Open session"}
+        </button>
+      )}
       {closeMsg && <span role="alert">{closeMsg}</span>}
+      {showSession && a.session_id && <SessionView sessionId={a.session_id} />}
     </li>
   );
 }
@@ -477,6 +485,8 @@ export function App({ reconnectMs = 1000 }: { reconnectMs?: number }) {
           )}
         </section>
       )}
+
+      {feed.notice && <p role="status">{feed.notice}</p>}
 
       <section>
         <h2>Alerts</h2>

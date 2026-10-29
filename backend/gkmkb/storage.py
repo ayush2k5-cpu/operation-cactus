@@ -100,6 +100,10 @@ class StorageBase(ABC):
         """
 
     @abstractmethod
+    def set_alert_engaged(self, alert_id: str, session_id: str) -> None:
+        """Attach a session to an Alert; an open Alert becomes engaged, a closed one stays closed."""
+
+    @abstractmethod
     def save_session(self, session: HoneypotSession) -> None:
         """Insert or replace a HoneypotSession."""
 
@@ -172,6 +176,14 @@ class MemoryStore(StorageBase):
                 self._alerts[i] = (alert.model_copy(update={"status": "closed"}), replay_id)
                 return CloseResult.ok
         return CloseResult.not_found
+
+    def set_alert_engaged(self, alert_id: str, session_id: str) -> None:
+        for i, (alert, replay_id) in enumerate(self._alerts):
+            if alert.alert_id == alert_id:
+                status = "engaged" if alert.status == "open" else alert.status
+                update = {"session_id": session_id, "status": status}
+                self._alerts[i] = (alert.model_copy(update=update), replay_id)
+                return
 
     def save_session(self, session: HoneypotSession) -> None:
         self._sessions[session.session_id] = session
@@ -267,6 +279,12 @@ class MongoStore(StorageBase):
             return CloseResult.already_closed
         self._alerts_col.update_one({"alert_id": alert_id}, {"$set": {"status": "closed"}})
         return CloseResult.ok
+
+    def set_alert_engaged(self, alert_id: str, session_id: str) -> None:
+        self._alerts_col.update_one(
+            {"alert_id": alert_id, "status": "open"}, {"$set": {"status": "engaged"}}
+        )
+        self._alerts_col.update_one({"alert_id": alert_id}, {"$set": {"session_id": session_id}})
 
     def save_session(self, session: HoneypotSession) -> None:
         doc = session.model_dump(mode="json")

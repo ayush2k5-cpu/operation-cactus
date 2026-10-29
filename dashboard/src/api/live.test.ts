@@ -19,3 +19,35 @@ describe("startFeed", () => {
     expect(feed.replay?.state).toBe("running");
   });
 });
+
+describe("honeypot messages", () => {
+  const alert = {
+    alert_id: "r1-alert-0001",
+    entity: { src_ip: "10.0.2.20", dst_ip: "10.0.0.53" },
+    detection_ids: ["a", "b"],
+    severity: "medium" as const,
+    ts: "2026-10-20T10:00:00Z",
+    status: "open" as const,
+    session_id: null,
+  };
+
+  it("marks the Alert engaged and keeps its session id", () => {
+    let feed = applyMessage(emptyFeed, { type: "alert", replay_id: "r1", data: alert });
+    feed = applyMessage(feed, {
+      type: "alert_engaged",
+      replay_id: "r1",
+      data: { alert_id: alert.alert_id, session_id: "s-1" },
+    });
+    expect(feed.alerts[0].status).toBe("engaged");
+    expect(feed.alerts[0].session_id).toBe("s-1");
+  });
+
+  it("shows a notice when no session could start", () => {
+    const feed = applyMessage(emptyFeed, {
+      type: "session_failed",
+      replay_id: "r1",
+      data: { alert_id: "x", error: "RuntimeError: Docker is not running" },
+    });
+    expect(feed.notice).toBe("No honeypot session: RuntimeError: Docker is not running");
+  });
+});
