@@ -240,6 +240,25 @@ def test_close_alert_ok(store_fixture, request):
 
 
 @pytest.mark.parametrize("store_fixture", STORE_FIXTURES)
+def test_set_alert_engaged_attaches_session_to_open_alert(store_fixture, request):
+    store: StorageBase = request.getfixturevalue(store_fixture)
+    store.save_alert(_alert("run1-alert-0001"), "run1")
+    store.set_alert_engaged("run1-alert-0001", "s-1")
+    alert = store.list_alerts()[0]
+    assert (alert.status, alert.session_id) == ("engaged", "s-1")
+
+
+@pytest.mark.parametrize("store_fixture", STORE_FIXTURES)
+def test_set_alert_engaged_keeps_a_closed_alert_closed(store_fixture, request):
+    store: StorageBase = request.getfixturevalue(store_fixture)
+    store.save_alert(_alert("run1-alert-0001"), "run1")
+    store.close_alert("run1-alert-0001")
+    store.set_alert_engaged("run1-alert-0001", "s-1")
+    alert = store.list_alerts()[0]
+    assert (alert.status, alert.session_id) == ("closed", "s-1")
+
+
+@pytest.mark.parametrize("store_fixture", STORE_FIXTURES)
 def test_close_alert_not_found(store_fixture, request):
     store: StorageBase = request.getfixturevalue(store_fixture)
     result = store.close_alert("does-not-exist")

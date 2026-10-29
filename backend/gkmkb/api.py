@@ -3,6 +3,7 @@
 import asyncio
 import threading
 import time
+from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
 from uuid import uuid4
@@ -15,7 +16,7 @@ from backend.gkmkb.pipeline import default_detectors, stream
 from backend.gkmkb.settings import load_settings
 from backend.gkmkb.storage import CloseResult, ReplayRecord, ReplayState, StorageBase
 from capture.replay import ReplaySource
-from contracts.models import Alert, Detection
+from contracts.models import Alert, Detection, HoneypotSession
 
 _LIST_DEFAULT = 50
 _LIST_MAX = 500
@@ -54,8 +55,11 @@ def create_app(
     store: StorageBase,
     data_dir: str | Path | None = None,
     event_delay_ms: float | None = None,
+    engage_fn: Callable[[Alert], HoneypotSession] | None = None,
 ) -> FastAPI:
     settings = load_settings()
+    if engage_fn is None and settings.honeypot_engage:
+        from mimicnet.honeypot import engage as engage_fn
     root = Path(settings.data_dir if data_dir is None else data_dir).resolve()
     delay = (settings.replay_event_delay_ms if event_delay_ms is None else event_delay_ms) / 1000
     hub = EventHub()
@@ -64,6 +68,32 @@ def create_app(
 
     _active_gate: list[Gate] = []
     _active_gate_lock = threading.Lock()
+
+    def engage_alert(alert: Alert, replay_id: str) -> None:
+        """Start a honeypot session for an Alert, store it and tell the connected clients."""
+        try:
+            session = engage_fn(alert)
+        except Exception as exc:  # a second session, Docker missing, a container error
+            error = f"{type(exc).__name__}: {exc}"
+            hub.publish(
+                {
+                    "type": "session_failed",
+                    "replay_id": replay_id,
+                    "data": {"alert_id": alert.alert_id, "error": error},
+                }
+            )
+            return
+        store.save_session(session)
+        store.set_alert_engaged(alert.alert_id, session.session_id)
+        for event in session.events:
+            publish_session_event(session.session_id, event.model_dump(mode="json"))
+        hub.publish(
+            {
+                "type": "alert_engaged",
+                "replay_id": replay_id,
+                "data": {"alert_id": alert.alert_id, "session_id": session.session_id},
+            }
+        )
 
     def run_replay(replay_id: str, pcap: Path) -> None:
         flows = detections = alerts = 0
@@ -95,6 +125,10 @@ def create_app(
                 hub.publish(
                     {"type": kind, "replay_id": replay_id, "data": event.model_dump(mode="json")}
                 )
+                if isinstance(event, Alert) and engage_fn is not None:
+                    threading.Thread(
+                        target=engage_alert, args=(event, replay_id), daemon=True
+                    ).start()
                 if delay > 0:
                     time.sleep(delay)
         except Exception as exc:

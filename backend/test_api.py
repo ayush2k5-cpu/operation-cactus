@@ -346,3 +346,66 @@ def test_session_event_broadcast_over_websocket(data_dir, store):
     assert msg["type"] == "session_event"
     assert msg["session_id"] == "s-live"
     assert msg["data"]["type"] == "connect"
+
+
+def _fake_session(alert):
+    t0 = datetime(2026, 10, 20, 10, 0, 0, tzinfo=UTC)
+    return HoneypotSession(
+        session_id="s-live",
+        alert_id=alert.alert_id,
+        service="ssh-like",
+        container_id="fake",
+        started=t0,
+        events=[
+            SessionEvent(ts=t0, type="connect", data={"attacker_addr": "192.0.2.50"}),
+            SessionEvent(ts=t0 + timedelta(seconds=1), type="command", data={"line": "whoami"}),
+        ],
+    )
+
+
+def _read_until(ws, kinds):
+    seen = []
+    while True:
+        message = ws.receive_json()
+        seen.append(message)
+        if message["type"] in kinds:
+            return seen
+
+
+def test_alert_starts_a_honeypot_session(data_dir, store):
+    client = TestClient(create_app(store, data_dir, engage_fn=_fake_session))
+    with client.websocket_connect("/ws/events") as ws:
+        replay_id = client.post("/api/replay", json={"pcap": "mix.pcap"}).json()["replay_id"]
+        seen = _read_until(ws, {"alert_engaged", "session_failed"})
+        if not any(m["type"] == "replay_done" for m in seen):
+            seen += _read_until(ws, {"replay_done"})
+    kinds = [m["type"] for m in seen]
+    assert kinds.count("session_event") == 2
+    engaged = next(m for m in seen if m["type"] == "alert_engaged")
+    assert engaged["data"]["session_id"] == "s-live"
+    alert = store.list_alerts(replay_id=replay_id)[0]
+    assert (alert.status, alert.session_id) == ("engaged", "s-live")
+    session = client.get("/api/sessions/s-live").json()
+    assert [e["type"] for e in session["events"]] == ["connect", "command"]
+
+
+def test_honeypot_failure_leaves_the_alert_open(data_dir, store):
+    def refuse(alert):
+        raise RuntimeError("a honeypot session is already running")
+
+    client = TestClient(create_app(store, data_dir, engage_fn=refuse))
+    with client.websocket_connect("/ws/events") as ws:
+        replay_id = client.post("/api/replay", json={"pcap": "mix.pcap"}).json()["replay_id"]
+        seen = _read_until(ws, {"session_failed"})
+    failed = seen[-1]
+    assert "already running" in failed["data"]["error"]
+    alert = store.list_alerts(replay_id=replay_id)[0]
+    assert (alert.status, alert.session_id) == ("open", None)
+
+
+def test_no_honeypot_without_an_engage_function(data_dir, store, monkeypatch):
+    monkeypatch.delenv("HONEYPOT_ENGAGE", raising=False)
+    client = TestClient(create_app(store, data_dir))
+    replay_id, messages = replay_messages(client, "mix.pcap")
+    assert not any(m["type"] in ("alert_engaged", "session_failed") for m in messages)
+    assert store.list_alerts(replay_id=replay_id)[0].status == "open"

@@ -4,6 +4,18 @@ export type Detection = components["schemas"]["Detection"];
 export type Alert = components["schemas"]["Alert"];
 export type ReplayRecord = components["schemas"]["ReplayRecord"];
 
+export type SessionEvent = { ts: string; type: string; data: Record<string, string> };
+export type MitreTag = { technique_id: string; name: string; evidence: string };
+export type Session = {
+  session_id: string;
+  alert_id: string;
+  service: string;
+  started: string;
+  ended: string | null;
+  events: SessionEvent[];
+  mitre: MitreTag[];
+};
+
 export class ApiError extends Error {
   constructor(
     readonly status: number,
@@ -46,3 +58,4 @@ export const closeAlert = (alertId: string) =>
   request<Record<string, unknown>>(`/api/alerts/${alertId}/close`, {
     method: "POST",
   });
+export const getSession = (sessionId: string) => request<Session>(`/api/sessions/${sessionId}`);
