@@ -96,7 +96,7 @@ def test_evaluation_runner_prints_table_per_detector_and_gate_with_raw_counts(ca
     assert "(0/1)" in out
 
     # FlowSight marked with [stub]
-    assert "flowsight [stub]" in out
+    assert "flowsight" in out
 
 
 @pytest.mark.skipif(not DEMO_PCAP.exists(), reason="demo pcap not generated")
@@ -108,7 +108,7 @@ def test_time_to_first_detection_recorded_for_tunnel_entity(capsys):
     assert "Time to first Detection (tunnel entities):" in out
     assert "10.0.2.20 -> 10.0.0.53" in out
     assert "covertrace" in out
-    assert "flowsight [stub]" in out
+    assert "flowsight" in out
     assert "gate" in out
 
 

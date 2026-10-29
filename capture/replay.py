@@ -23,6 +23,11 @@ from contracts.models import DnsQuery, FlowRecord
 
 log = logging.getLogger(__name__)
 
+
+class ReplayError(Exception):
+    """The file cannot be read as a pcap."""
+
+
 QTYPES = {1: "A", 2: "NS", 5: "CNAME", 10: "NULL", 15: "MX", 16: "TXT", 28: "AAAA"}
 
 
@@ -108,11 +113,14 @@ class ReplaySource:
             yield flow.to_record()
 
     def _packets(self) -> Iterator:
+        if not self.path.is_file():
+            raise FileNotFoundError(f"pcap not found: {self.path.name}")
+        if self.path.stat().st_size == 0:
+            return  # an empty capture has no flows
         try:
             reader = PcapReader(str(self.path))
         except Exception as exc:
-            log.warning("cannot open %s: %s", self.path, exc)
-            return
+            raise ReplayError(f"cannot read {self.path.name} as a pcap: {exc}") from exc
         try:
             yield from reader
         except Exception as exc:  # truncated file: keep what was read

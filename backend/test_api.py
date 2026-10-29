@@ -108,6 +108,16 @@ def test_missing_pcap_is_recorded_as_failed(data_dir, store):
     assert record.error == done["error"]
 
 
+def test_file_that_is_not_a_pcap_is_recorded_as_failed(data_dir, store):
+    (data_dir / "junk.pcap").write_bytes(b"this is not a pcap file")
+    client = TestClient(create_app(store, data_dir))
+    replay_id, messages = replay_messages(client, "junk.pcap")
+    done = messages[-1]["data"]
+    assert done["state"] == "failed"
+    assert "junk.pcap" in done["error"]
+    assert store.get_replay(replay_id).state == ReplayState.failed
+
+
 def test_disconnected_client_does_not_stop_replay(data_dir, store):
     client = TestClient(create_app(store, data_dir, event_delay_ms=5))
     with client.websocket_connect("/ws/events") as ws:

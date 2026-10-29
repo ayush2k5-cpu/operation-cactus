@@ -1,9 +1,10 @@
+import pytest
 from scapy.layers.dns import DNS, DNSQR
 from scapy.layers.inet import ICMP, IP, UDP
 from scapy.layers.l2 import Ether
 from scapy.utils import wrpcap
 
-from capture.replay import ReplaySource
+from capture.replay import ReplayError, ReplaySource
 
 T0 = 1_760_000_000.0
 
@@ -84,8 +85,16 @@ def test_empty_file_yields_nothing(tmp_path):
     assert list(ReplaySource(path).flows()) == []
 
 
-def test_missing_file_yields_nothing(tmp_path):
-    assert list(ReplaySource(tmp_path / "nope.pcap").flows()) == []
+def test_missing_file_is_an_error(tmp_path):
+    with pytest.raises(FileNotFoundError, match="nope.pcap"):
+        list(ReplaySource(tmp_path / "nope.pcap").flows())
+
+
+def test_file_that_is_not_a_pcap_is_an_error(tmp_path):
+    path = tmp_path / "junk.pcap"
+    path.write_bytes(b"this is not a pcap file at all")
+    with pytest.raises(ReplayError, match="junk.pcap"):
+        list(ReplaySource(path).flows())
 
 
 def test_truncated_file_keeps_what_was_read(tmp_path):

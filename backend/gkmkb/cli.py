@@ -2,6 +2,7 @@ import argparse
 import sys
 
 from backend.gkmkb.pipeline import run
+from capture.replay import ReplayError
 
 
 def serve() -> int:
@@ -33,7 +34,11 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "serve":
         return serve()
 
-    result = run(args.pcap, window_seconds=args.window, threshold=args.threshold)
+    try:
+        result = run(args.pcap, window_seconds=args.window, threshold=args.threshold)
+    except (FileNotFoundError, ReplayError) as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 2
     print(f"flows: {result.flows}")
     print(f"detections: {len(result.detections)}")
     for d in result.detections:

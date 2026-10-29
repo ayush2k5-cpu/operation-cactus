@@ -32,7 +32,7 @@ from eval.metrics import (
 )
 
 TARGET_COVERTRACE = "covertrace"
-TARGET_FLOWSIGHT = "flowsight [stub]"
+TARGET_FLOWSIGHT = "flowsight"
 TARGET_GATE = "gate"
 EVAL_TARGETS = [TARGET_COVERTRACE, TARGET_FLOWSIGHT, TARGET_GATE]
 
