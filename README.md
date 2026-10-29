@@ -55,6 +55,30 @@ Follow `docs/WorkflowSetup.md` once. It installs the shared skills and shows the
 ### 5. Pick a ticket and start
 Open the Issues tab, take an issue with your `owner:<name>` label, then run `python scripts/ticket.py start <issue number>`. When you are done run `python scripts/ticket.py submit <issue number>`; it opens a PR into your module branch. Details in `CONTRIBUTING.md`.
 
+## Run the stack (database and backend)
+Needs Docker running. From the repo root:
+```bash
+docker compose up --build        # start; wait until both services show "healthy"
+curl http://127.0.0.1:8000/api/health
+curl -X POST http://127.0.0.1:8000/api/replay -H "Content-Type: application/json" -d '{"pcap": "demo/dns_tunnel_plus_benign.pcap"}'
+curl http://127.0.0.1:8000/api/alerts
+docker compose down              # teardown, keeps the database volume
+docker compose down -v           # teardown and delete the database volume
+```
+The backend listens on `127.0.0.1:8000` only. `data/` is mounted read-only at `/app/data`. Settings come from `.env.example`; the compose file overrides the Mongo address, the bind host and the data path for the container.
+
+Known failure points:
+- Docker Desktop not running: `docker compose` cannot connect to the daemon. Start it and retry.
+- Port 8000 already in use (for example a local `gkmkb serve`): stop that process or the stack fails to start.
+- First `--build` is slow and large (scikit-learn, xgboost, scipy); later builds use the cache.
+- Backend stays `starting` until Mongo is healthy; on a slow laptop that can take about a minute.
+- A replay of a pcap that is not under `data/` is rejected; there is no upload.
+- Changing `.env.example` needs `docker compose up -d` again to take effect.
+
+Risk for the MimicNet spec: the honeypot needs the backend to start containers, which means giving the backend container the host Docker socket. This compose file does not do that. Mounting the socket gives the container control of the host, so the MimicNet spec must decide how to grant it.
+
+Status: written but not yet verified by hand on a clean machine (see PR).
+
 ## Modules
 | Module | Folder | What |
 |---|---|---|
