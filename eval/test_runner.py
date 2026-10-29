@@ -77,8 +77,8 @@ def test_tuning_and_test_sets_share_no_capture():
 
 
 @pytest.mark.skipif(not DEMO_PCAP.exists(), reason="demo pcap not generated")
-def test_evaluation_runner_prints_table_per_detector_and_gate_with_raw_counts(capsys):
-    ret = main(["--pcap", str(DEMO_PCAP)])
+def test_evaluation_runner_prints_table_per_detector_and_gate_with_raw_counts(capsys, tmp_path):
+    ret = main(["--pcap", str(DEMO_PCAP), "--output-dir", str(tmp_path)])
     assert ret == 0
     out = capsys.readouterr().out
 
@@ -100,8 +100,8 @@ def test_evaluation_runner_prints_table_per_detector_and_gate_with_raw_counts(ca
 
 
 @pytest.mark.skipif(not DEMO_PCAP.exists(), reason="demo pcap not generated")
-def test_time_to_first_detection_recorded_for_tunnel_entity(capsys):
-    ret = main(["--pcap", str(DEMO_PCAP)])
+def test_time_to_first_detection_recorded_for_tunnel_entity(capsys, tmp_path):
+    ret = main(["--pcap", str(DEMO_PCAP), "--output-dir", str(tmp_path)])
     assert ret == 0
     out = capsys.readouterr().out
 
