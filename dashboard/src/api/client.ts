@@ -24,13 +24,25 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 export const listPcaps = () => request<string[]>("/api/pcaps");
 export const listReplays = () => request<ReplayRecord[]>("/api/replays");
-export const listDetections = (replayId: string) =>
-  request<Detection[]>(`/api/detections?replay_id=${replayId}&limit=500`);
-export const listAlerts = (replayId: string) =>
-  request<Alert[]>(`/api/alerts?replay_id=${replayId}&limit=500`);
+export const listDetections = (replayId?: string) =>
+  request<Detection[]>(
+    replayId
+      ? `/api/detections?replay_id=${replayId}&limit=500`
+      : "/api/detections?limit=500",
+  );
+export const listAlerts = (replayId?: string) =>
+  request<Alert[]>(
+    replayId
+      ? `/api/alerts?replay_id=${replayId}&limit=500`
+      : "/api/alerts?limit=500",
+  );
 export const startReplay = (pcap: string) =>
   request<{ replay_id: string }>("/api/replay", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ pcap }),
+  });
+export const closeAlert = (alertId: string) =>
+  request<Record<string, unknown>>(`/api/alerts/${alertId}/close`, {
+    method: "POST",
   });

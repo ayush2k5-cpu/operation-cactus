@@ -24,7 +24,7 @@ class FakeSocket {
 }
 
 const entity = { src_ip: "10.0.0.5", dst_ip: "10.0.0.9" };
-const detection = (id: string, source = "flowsight") => ({
+const detection = (id: string, source = "flowsight", overrides: object = {}) => ({
   detection_id: id,
   source,
   flow_id: `flow-${id}`,
@@ -34,6 +34,7 @@ const detection = (id: string, source = "flowsight") => ({
   label: "dns_tunnel",
   features: {},
   threshold_used: 0.5,
+  ...overrides,
 });
 const alert = {
   alert_id: "a1",
@@ -62,6 +63,7 @@ type Backend = {
   detections: object[];
   alerts: object[];
   post: () => { status: number; body: object };
+  closeStatus: number;
   down: boolean;
 };
 
@@ -80,6 +82,7 @@ beforeEach(() => {
     detections: [],
     alerts: [],
     post: () => ({ status: 200, body: { replay_id: "r1" } }),
+    closeStatus: 200,
     down: false,
   };
   vi.stubGlobal("WebSocket", FakeSocket);
@@ -91,7 +94,17 @@ beforeEach(() => {
       if (url === "/api/pcaps") return json(200, ["dns_tunnel_plus_benign.pcap", "control.pcap"]);
       if (url === "/api/replays") return json(200, backend.replays);
       if (url.startsWith("/api/detections")) return json(200, backend.detections);
-      if (url.startsWith("/api/alerts")) return json(200, backend.alerts);
+      if (url.startsWith("/api/alerts") && !url.includes("/close"))
+        return json(200, backend.alerts);
+      if (url.includes("/close")) {
+        if (backend.closeStatus === 200) return json(200, { status: "closed" });
+        return json(backend.closeStatus, {
+          detail:
+            backend.closeStatus === 404
+              ? "Alert not found"
+              : "Alert is already closed",
+        });
+      }
       if (url === "/api/replay") {
         const { status, body } = backend.post();
         return json(status, body);
@@ -153,7 +166,9 @@ describe("Console", () => {
     backend.replays = [record()];
     backend.detections = [detection("d1")];
     const socket = await openConsole();
-    await waitFor(() => expect(screen.getByRole("list", { name: "Detections" }).children).toHaveLength(1));
+    await waitFor(() =>
+      expect(screen.getByRole("list", { name: "Detections" }).children).toHaveLength(1),
+    );
 
     socket.send({ type: "detection", replay_id: "r1", data: detection("d1") });
     socket.send({ type: "detection", replay_id: "r1", data: detection("d2") });
@@ -198,5 +213,187 @@ describe("Console", () => {
     render(<App reconnectMs={0} />);
 
     expect(await screen.findByRole("alert")).toHaveTextContent("Backend is down");
+  });
+
+  it("closes an Alert once and updates its status", async () => {
+    const socket = await openConsole();
+    await userEvent.click(screen.getByRole("button", { name: "Start replay" }));
+    await screen.findByText(/Replay r1/);
+    socket.send({ type: "alert", replay_id: "r1", data: alert });
+
+    const closeBtn = await screen.findByRole("button", { name: "Close" });
+    await userEvent.click(closeBtn);
+    expect(calls).toContain("POST /api/alerts/a1/close");
+    await waitFor(() =>
+      expect(screen.getByRole("list", { name: "Alerts" })).toHaveTextContent("closed"),
+    );
+    expect(screen.queryByRole("button", { name: "Close" })).not.toBeInTheDocument();
+  });
+
+  it("shows a clear message when an Alert is already closed", async () => {
+    backend.closeStatus = 409;
+    const socket = await openConsole();
+    await userEvent.click(screen.getByRole("button", { name: "Start replay" }));
+    await screen.findByText(/Replay r1/);
+    socket.send({ type: "alert", replay_id: "r1", data: alert });
+
+    await userEvent.click(await screen.findByRole("button", { name: "Close" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("already closed");
+  });
+
+  it("shows a clear message when the Alert is not found", async () => {
+    backend.closeStatus = 404;
+    const socket = await openConsole();
+    await userEvent.click(screen.getByRole("button", { name: "Start replay" }));
+    await screen.findByText(/Replay r1/);
+    socket.send({ type: "alert", replay_id: "r1", data: alert });
+
+    await userEvent.click(await screen.findByRole("button", { name: "Close" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("not found");
+  });
+
+  it("shows a Detection with source, score, label, Entity and features", async () => {
+    const socket = await openConsole();
+    await userEvent.click(screen.getByRole("button", { name: "Start replay" }));
+    await screen.findByText(/Replay r1/);
+    socket.send({
+      type: "detection",
+      replay_id: "r1",
+      data: detection("d1", "flowsight", { features: { byte_rate: 1234.5 } }),
+    });
+
+    const list = screen.getByRole("list", { name: "Detections" });
+    expect(list).toHaveTextContent("flowsight");
+    expect(list).toHaveTextContent("dns_tunnel");
+    expect(list).toHaveTextContent("score 0.90");
+    expect(list).toHaveTextContent("10.0.0.5");
+    expect(list).toHaveTextContent("10.0.0.9");
+    expect(list).toHaveTextContent("byte_rate");
+  });
+
+  it("marks a CoverTrace Detection with the checker that fired", async () => {
+    const socket = await openConsole();
+    await userEvent.click(screen.getByRole("button", { name: "Start replay" }));
+    await screen.findByText(/Replay r1/);
+    socket.send({
+      type: "detection",
+      replay_id: "r1",
+      data: detection("d1", "covertrace", { label: "dns_entropy" }),
+    });
+
+    expect(await screen.findByText(/checker: dns_entropy/)).toBeInTheDocument();
+  });
+
+  it("marks a Rule hit differently from a statistical Detection", async () => {
+    const socket = await openConsole();
+    await userEvent.click(screen.getByRole("button", { name: "Start replay" }));
+    await screen.findByText(/Replay r1/);
+    socket.send({
+      type: "detection",
+      replay_id: "r1",
+      data: detection("d1", "flowsight", { score: 1.0, label: "rule:r-abc" }),
+    });
+    socket.send({
+      type: "detection",
+      replay_id: "r1",
+      data: detection("d2", "flowsight"),
+    });
+
+    expect(await screen.findByText(/\[Rule hit\]/)).toBeInTheDocument();
+    const items = screen.getByRole("list", { name: "Detections" }).querySelectorAll("[data-rule]");
+    expect(items).toHaveLength(1);
+  });
+
+  it("shows empty state for Detections and Alerts", async () => {
+    await openConsole();
+    expect(screen.getByText("No Detections yet.")).toBeInTheDocument();
+    expect(screen.getByText("No Alerts yet.")).toBeInTheDocument();
+  });
+
+  it("lists past replays with pcap name, start time, state and counts", async () => {
+    backend.replays = [
+      record({
+        state: "done",
+        ended: "2026-10-21T10:05:00Z",
+        flow_count: 40,
+        detection_count: 2,
+        alert_count: 1,
+      }),
+    ];
+    await openConsole();
+    await userEvent.click(screen.getByRole("button", { name: "Past Replays" }));
+
+    const list = await screen.findByRole("list", { name: "Past Replays" });
+    expect(list).toHaveTextContent("dns_tunnel_plus_benign.pcap");
+    expect(list).toHaveTextContent("2026-10-21T10:00:00Z");
+    expect(list).toHaveTextContent("done");
+    expect(list).toHaveTextContent("flows 40");
+    expect(list).toHaveTextContent("detections 2");
+    expect(list).toHaveTextContent("alerts 1");
+  });
+
+  it("shows empty state for Replays list", async () => {
+    await openConsole();
+    await userEvent.click(screen.getByRole("button", { name: "Past Replays" }));
+    expect(await screen.findByText("No past replays.")).toBeInTheDocument();
+  });
+
+  it("opens a past replay and shows its Detections and Alerts", async () => {
+    backend.replays = [record({ state: "done" })];
+    backend.detections = [detection("d1")];
+    backend.alerts = [{ ...alert }];
+    await openConsole();
+    await userEvent.click(screen.getByRole("button", { name: "Past Replays" }));
+    await userEvent.click(
+      await screen.findByRole("button", { name: "dns_tunnel_plus_benign.pcap" }),
+    );
+
+    expect(await screen.findByRole("list", { name: "Replay Detections" })).toHaveTextContent(
+      "dns_tunnel",
+    );
+    expect(screen.getByRole("list", { name: "Replay Alerts" })).toHaveTextContent("high");
+  });
+
+  it("shows empty states inside a past replay", async () => {
+    backend.replays = [record({ state: "done" })];
+    await openConsole();
+    await userEvent.click(screen.getByRole("button", { name: "Past Replays" }));
+    await userEvent.click(
+      await screen.findByRole("button", { name: "dns_tunnel_plus_benign.pcap" }),
+    );
+
+    expect(await screen.findByText("No Detections for this replay.")).toBeInTheDocument();
+    expect(screen.getByText("No Alerts for this replay.")).toBeInTheDocument();
+  });
+
+  it("closes an Alert from the replay detail view", async () => {
+    backend.replays = [record({ state: "done" })];
+    backend.alerts = [{ ...alert }];
+    await openConsole();
+    await userEvent.click(screen.getByRole("button", { name: "Past Replays" }));
+    await userEvent.click(
+      await screen.findByRole("button", { name: "dns_tunnel_plus_benign.pcap" }),
+    );
+
+    const closeBtn = await screen.findByRole("button", { name: "Close" });
+    await userEvent.click(closeBtn);
+    expect(calls).toContain("POST /api/alerts/a1/close");
+    await waitFor(() =>
+      expect(screen.getByRole("list", { name: "Replay Alerts" })).toHaveTextContent("closed"),
+    );
+  });
+
+  it("shows already-closed message in replay detail", async () => {
+    backend.closeStatus = 409;
+    backend.replays = [record({ state: "done" })];
+    backend.alerts = [{ ...alert }];
+    await openConsole();
+    await userEvent.click(screen.getByRole("button", { name: "Past Replays" }));
+    await userEvent.click(
+      await screen.findByRole("button", { name: "dns_tunnel_plus_benign.pcap" }),
+    );
+
+    await userEvent.click(await screen.findByRole("button", { name: "Close" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("already closed");
   });
 });
