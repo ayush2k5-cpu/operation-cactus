@@ -54,6 +54,8 @@ export function mergeHistory(
 
 export function startFeed(feed: Feed, id: string, pcap: string | null): Feed {
   const same = feed.replay?.id === id;
+  // A fast replay can finish over the socket before the start request returns.
+  if (same && feed.replay) return { ...feed, replay: { ...feed.replay, pcap } };
   return {
     replay: { id, pcap, state: "running", error: null, counts: null },
     detections: same ? feed.detections : [],
