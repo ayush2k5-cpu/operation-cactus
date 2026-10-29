@@ -184,7 +184,7 @@ def create_app(
     def list_pcaps() -> list[str]:
         if not root.is_dir():
             return []
-        names = sorted(p.name for p in root.iterdir() if p.is_file())
+        names = sorted(p.name for p in root.iterdir() if p.is_file() and p.suffix == ".pcap")
         return names
 
     @app.get("/api/sessions/{session_id}")
