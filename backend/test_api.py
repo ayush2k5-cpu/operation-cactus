@@ -257,6 +257,12 @@ def test_list_pcaps_returns_sorted_names(data_dir, store):
     assert "control.pcap" in names
 
 
+def test_list_pcaps_skips_files_that_are_not_pcaps(data_dir, store):
+    (data_dir / "mix.labels").write_text("src_ip,dst_ip,label", encoding="utf-8")
+    names = TestClient(create_app(store, data_dir)).get("/api/pcaps").json()
+    assert names == ["control.pcap", "mix.pcap"]
+
+
 def test_list_pcaps_empty_dir(tmp_path, store):
     empty = tmp_path / "empty"
     empty.mkdir()

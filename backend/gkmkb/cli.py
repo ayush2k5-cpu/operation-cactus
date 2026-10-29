@@ -16,7 +16,7 @@ def serve() -> int:
         store = MongoStore(settings.mongo_uri, settings.mongo_db)
     else:
         store = MemoryStore()
-    uvicorn.run(create_app(store), host="127.0.0.1", port=8000)
+    uvicorn.run(create_app(store), host=settings.api_host, port=8000)
     return 0
 
 
@@ -27,7 +27,7 @@ def main(argv: list[str] | None = None) -> int:
     replay.add_argument("pcap")
     replay.add_argument("--window", type=float, default=None, help="gate window in seconds")
     replay.add_argument("--threshold", type=float, default=None, help="gate score threshold")
-    sub.add_parser("serve", help="start the API on 127.0.0.1")
+    sub.add_parser("serve", help="start the API (127.0.0.1 unless API_HOST is set)")
     args = parser.parse_args(argv)
 
     if args.command == "serve":

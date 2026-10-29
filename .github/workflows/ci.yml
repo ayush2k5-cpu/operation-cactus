@@ -37,4 +37,4 @@ jobs:
           node-version: 22
       - if: steps.has.outputs.found == 'true'
         working-directory: dashboard
-        run: npm ci && npm run lint && npm run build
+        run: npm ci && npm run lint && npm test && npm run build
