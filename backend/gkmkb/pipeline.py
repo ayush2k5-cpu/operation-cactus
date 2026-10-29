@@ -4,10 +4,10 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from backend.gkmkb.gate import Gate
-from backend.gkmkb.stubs import FlowSightStub
 from capture.replay import ReplaySource
 from contracts.models import Alert, Detection
 from covertrace.dns import DnsEntropyConfig, DnsEntropyDetector
+from flowsight.detector import FlowSight, FlowSightConfig
 
 
 @dataclass
@@ -18,9 +18,7 @@ class Result:
 
 
 def run(pcap: str | Path, window_seconds: float = 60.0, threshold: float = 0.7) -> Result:
-    flowsight = FlowSightStub(
-        window_seconds=window_seconds
-    )  # [stub] until the real FlowSight lands
+    flowsight = FlowSight(FlowSightConfig(window_seconds=window_seconds))
     covertrace = DnsEntropyDetector(DnsEntropyConfig(window_seconds=window_seconds))
     gate = Gate(window_seconds=window_seconds, threshold=threshold)
     result = Result()

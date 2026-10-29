@@ -43,8 +43,21 @@ def test_long_flow_tunnel_is_detected(tmp_path):
     assert det.entity.src_ip == TUNNEL
     assert 0.5 <= det.score <= 1.0
     assert det.threshold_used == 0.5
-    assert "[stub]" in det.label
-    assert {"mean_pkt_size", "cadence_cv", "packet_count"} <= det.features.keys()
+    assert "[stub]" not in det.label
+    assert {
+        "flow_avg_pkt_size_log",
+        "flow_pkt_size_variance",
+        "flow_iat_mean_ms",
+        "flow_burst_ratio",
+        "packet_count",
+    } <= det.features.keys()
+
+
+def test_clearer_tunnel_pattern_scores_higher(tmp_path):
+    partial = run(FlowSight(FlowSightConfig()), long_flow(tmp_path / "a.pcap", gap=0.5))
+    clear = run(FlowSight(FlowSightConfig()), long_flow(tmp_path / "b.pcap", gap=0.05))
+    assert len(partial) == len(clear) == 1
+    assert clear[0].score > partial[0].score
 
 
 def test_many_one_packet_flows_tunnel_is_detected(tmp_path):
@@ -103,9 +116,23 @@ def test_missing_settings_file_gives_working_defaults(tmp_path):
     assert len(run(FlowSight(config), long_flow(tmp_path / "a.pcap"))) == 1
 
 
-@pytest.mark.parametrize("line", ["min_packets = 50", "score_cut = 0.9", "max_mean_size = 10"])
+@pytest.mark.parametrize(
+    "line",
+    [
+        "min_packets = 50",
+        "score_cut = 1.1",
+        "max_mean_size = 10",
+        "max_size_variance = -1",
+        "max_iat_mean_ms = 10",
+        "min_burst_ratio = 1.1",
+        "burst_limit_ms = 1",
+    ],
+)
 def test_settings_file_changes_behaviour(tmp_path, line):
     settings = tmp_path / "settings.toml"
     settings.write_text(line + "\n", encoding="utf-8")
-    flows = long_flow(tmp_path / "a.pcap")
-    assert run(FlowSight(load_config(settings)), flows) == []
+    flows = long_flow(tmp_path / "a.pcap", gap=0.05)
+    baseline = run(FlowSight(FlowSightConfig()), flows)
+    assert [d.score for d in baseline] == [1.0]
+    changed = run(FlowSight(load_config(settings)), flows)
+    assert [d.score for d in changed] != [1.0]

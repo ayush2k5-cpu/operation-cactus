@@ -4,18 +4,25 @@ Keeps a sliding window of packets per Entity and pools the packets of all its fl
 tunnel made of one long flow and a tunnel made of many one-packet flows look the same.
 Reads only packet sizes and gaps, never DNS, ICMP or HTTP fields.
 
-[stub] The scorer is a placeholder rule (small packets at an even cadence). The real rules
-and the classifier plug in behind `_score`.
+The scorer is rule-based on the four window features (small mean size, low spread, short
+gaps, high burst share). No classifier exists yet and no real-traffic result exists.
 """
 
+import math
 import tomllib
 from collections import defaultdict
 from dataclasses import dataclass, fields
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from statistics import mean, pstdev
 
 from contracts.models import Detection, Entity, FlowRecord
+from flowsight.features import (
+    flow_avg_pkt_size_log,
+    flow_burst_ratio,
+    flow_iat_mean_ms,
+    flow_pkt_size_variance,
+)
+from flowsight.settings import FLOWSIGHT_BURST_LIMIT_MS
 
 SETTINGS_PATH = Path(__file__).with_name("settings.toml")
 
@@ -25,8 +32,12 @@ class FlowSightConfig:
     window_seconds: float = 60.0
     min_packets: int = 20
     score_cut: float = 0.5
+    burst_limit_ms: float = FLOWSIGHT_BURST_LIMIT_MS
     max_mean_size: float = 150.0
-    max_cadence_cv: float = 0.5
+    max_size_variance: float = 400.0
+    max_iat_mean_ms: float = 1000.0
+    min_burst_ratio: float = 0.5
+    timing_weight: float = 0.6
 
 
 def load_config(path: str | Path = SETTINGS_PATH) -> FlowSightConfig:
@@ -63,8 +74,17 @@ class FlowSight:
         events[:] = [(t, size) for t, size in events if newest - t <= self._window]
         if key in self._flagged or len(events) < max(self.config.min_packets, 2):
             return None
-        mean_size, cadence_cv = self._features(events)
-        score = self._score(mean_size, cadence_cv)
+        sizes = [size for _, size in events]
+        iat_ms = [
+            (b[0] - a[0]).total_seconds() * 1000 for a, b in zip(events, events[1:], strict=False)
+        ]
+        features = {
+            "flow_avg_pkt_size_log": flow_avg_pkt_size_log(sizes),
+            "flow_pkt_size_variance": flow_pkt_size_variance(sizes),
+            "flow_iat_mean_ms": flow_iat_mean_ms(iat_ms),
+            "flow_burst_ratio": flow_burst_ratio(iat_ms, self.config.burst_limit_ms),
+        }
+        score = self._score(features)
         if score < self.config.score_cut:
             return None
         self._flagged.add(key)
@@ -76,12 +96,8 @@ class FlowSight:
             entity=Entity(src_ip=flow.src_ip, dst_ip=flow.dst_ip),
             ts=newest,
             score=score,
-            label="regular-small-packets [stub]",
-            features={
-                "mean_pkt_size": mean_size,
-                "cadence_cv": cadence_cv,
-                "packet_count": float(len(events)),
-            },
+            label="rule-small-regular-packets",
+            features={**features, "packet_count": float(len(events))},
             threshold_used=self.config.score_cut,
         )
 
@@ -96,15 +112,15 @@ class FlowSight:
             out.append((ts, size))
         return out
 
-    @staticmethod
-    def _features(events: list[tuple[datetime, int]]) -> tuple[float, float]:
-        gaps = [(b[0] - a[0]).total_seconds() for a, b in zip(events, events[1:], strict=False)]
-        mean_gap = mean(gaps)
-        cadence_cv = pstdev(gaps) / mean_gap if mean_gap > 0 else 0.0
-        return mean(size for _, size in events), cadence_cv
-
-    def _score(self, mean_size: float, cadence_cv: float) -> float:
-        """[stub] placeholder rule: 0.8 when small and even, else 0.2."""
-        small = mean_size <= self.config.max_mean_size
-        even = cadence_cv <= self.config.max_cadence_cv
-        return 0.8 if small and even else 0.2
+    def _score(self, features: dict[str, float]) -> float:
+        """Weighted share of rules met: two shape rules and two timing rules, 0 to 1."""
+        c = self.config
+        shape = [
+            features["flow_avg_pkt_size_log"] <= math.log(c.max_mean_size),
+            features["flow_pkt_size_variance"] <= c.max_size_variance,
+        ]
+        timing = [
+            features["flow_iat_mean_ms"] <= c.max_iat_mean_ms,
+            features["flow_burst_ratio"] >= c.min_burst_ratio,
+        ]
+        return (1 - c.timing_weight) * sum(shape) / 2 + c.timing_weight * sum(timing) / 2

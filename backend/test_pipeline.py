@@ -83,12 +83,12 @@ def test_cadence_without_entropy_is_single_signal(tmp_path):
     assert result.alerts == []
 
 
-def test_cli_prints_alert_and_stub_note(tunnel_and_benign, capsys):
+def test_cli_prints_alert_and_no_stub_note(tunnel_and_benign, capsys):
     assert main(["replay", str(tunnel_and_benign)]) == 0
     out = capsys.readouterr().out
     assert "alerts: 1" in out
     assert "ALERT" in out
-    assert "[stub]" in out
+    assert "[stub]" not in out
 
 
 def test_cli_prints_zero_alerts_for_empty_pcap(tmp_path, capsys):
