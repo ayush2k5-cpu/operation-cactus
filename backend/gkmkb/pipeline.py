@@ -1,7 +1,7 @@
 """Wire a capture source, the detectors and the gate. Only the backend does this wiring."""
 
 from collections.abc import Iterable, Iterator
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from uuid import uuid4
 
@@ -9,7 +9,7 @@ from backend.gkmkb.gate import Gate
 from backend.gkmkb.settings import load_settings
 from capture.replay import ReplaySource
 from contracts.models import Alert, Detection, FlowRecord
-from covertrace.dns import DnsEntropyConfig, DnsEntropyDetector
+from covertrace.detector import CoverTrace, load_config
 from flowsight.detector import FlowSight, FlowSightConfig
 
 
@@ -24,7 +24,7 @@ def default_detectors(window_seconds: float) -> list:
     """Fresh detectors for one replay."""
     return [
         FlowSight(FlowSightConfig(window_seconds=window_seconds)),
-        DnsEntropyDetector(DnsEntropyConfig(window_seconds=window_seconds)),
+        CoverTrace(replace(load_config(), window_seconds=window_seconds)),
     ]
 
 
