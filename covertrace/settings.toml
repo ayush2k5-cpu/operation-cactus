@@ -1,0 +1,5 @@
+window_seconds = 60.0
+entropy_threshold = 3.5
+min_queries = 20
+score_span = 1.5
+skip_suffixes = []
