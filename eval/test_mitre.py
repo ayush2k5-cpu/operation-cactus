@@ -88,13 +88,40 @@ class TestTagEvents:
         events = _scripted_events()
         tags = tag_events(events)
 
-        technique_ids = {t.technique_id for t in tags}
-        assert "T1033" in technique_ids, "whoami should map to T1033"
-        assert "T1082" in technique_ids, "uname -a should map to T1082"
-        assert "T1083" in technique_ids, "cat /etc/passwd should map to T1083"
-        assert "T1071.004" in technique_ids, "iodine should map to T1071.004"
-        assert "T1572" in technique_ids, "iodine -f should map to T1572"
-        assert "T1048" in technique_ids, "iodine should map to T1048"
+        # T1059.004 is absent on purpose: its keyword '/bin/sh' only appears in a
+        # reply, and tagging reads the typed command line only.
+        assert [(t.technique_id, t.name, t.evidence) for t in tags] == [
+            (
+                "T1033",
+                "System Owner/User Discovery",
+                "command matched user-discovery keyword 'whoami' [Unverified]",
+            ),
+            (
+                "T1082",
+                "System Information Discovery",
+                "command matched system-info keyword 'uname' [Unverified]",
+            ),
+            (
+                "T1083",
+                "File and Directory Discovery",
+                "command matched file-discovery keyword 'cat /etc/passwd' [Unverified]",
+            ),
+            (
+                "T1071.004",
+                "Application Layer Protocol: DNS",
+                "command matched DNS-tunnel keyword 'iodine' [Unverified]",
+            ),
+            (
+                "T1572",
+                "Protocol Tunneling",
+                "command matched tunneling keyword 'iodine -f' [Unverified]",
+            ),
+            (
+                "T1048",
+                "Exfiltration Over Alternative Protocol",
+                "command matched exfiltration-channel keyword 'iodine' [Unverified]",
+            ),
+        ]
 
     def test_scripted_attacker_tags_have_evidence_lines(self):
         events = _scripted_events()
