@@ -1,6 +1,6 @@
 # Honesty ledger
 
-Status on 2026-10-21, taken from `main` at `ed8f510`. Expands `docs/specs/GkmkbSpec.md` section 8. Everything marked Working or Partial was built in Cycle 1 by the lead (Ayush) with the Ojas dispatcher; teammates join in Cycle 2. The report and the slides claim only what this table marks Working.
+Status on 2026-11-14, taken from `main` at `f60d8cd`. Expands `docs/specs/GkmkbSpec.md` section 8. Everything marked Working or Partial was built in Cycle 1 by the lead (Ayush) with the Ojas dispatcher; teammates join in Cycle 2. The report and the slides claim only what this table marks Working.
 
 ## States
 
@@ -29,8 +29,8 @@ Status on 2026-10-21, taken from `main` at `ed8f510`. Expands `docs/specs/GkmkbS
 | Retrained Paper 1 baseline | Designed | EvalSpec; ticket #87 | 2026-10-22 | Sharukh |
 | Consent record for captures | Designed | EvalSpec; ticket #83 | 2026-10-22 | Sharukh |
 | Adaptive thresholds | Designed | Spec section 9, Cycle 4; no code | 2026-10-18 | Shivansh |
-| MimicNet honeypot with session recording | Partial | PR #111; `mimicnet/shell.py`, `mimicnet/honeypot.py`. SSH-like fake shell and `engage` in one locked-down container, container removed after the session; a real-Docker test passes in CI. Scripted attacker and fixed banner only. With `HONEYPOT_ENGAGE=1` the backend starts it from an Alert (PR #132), checked by hand in a browser with a real container; off by default, and the compose stack cannot start it (no Docker socket). No MITRE tags, no Rules, no closed loop (tickets #58, #60, #85) | 2026-10-29 | Shivansh (planned) |
-| MITRE tagging | Designed | MimicNet spec and EvalSpec; tickets #85 and #86 (#21 closed as superseded) | 2026-10-22 | Sharukh (planned) |
+| MimicNet honeypot with session recording | Partial | PR #111; `mimicnet/shell.py`, `mimicnet/honeypot.py`. SSH-like fake shell and `engage` in one locked-down container, container removed after the session; a real-Docker test passes in CI. Scripted attacker and fixed banner only. With `HONEYPOT_ENGAGE=1` the backend starts it from an Alert (PR #132), checked by hand in a browser with a real container; off by default, and the compose stack cannot start it (no Docker socket). No MITRE tags on sessions yet, no Rules, no closed loop (tickets #58, #60, #75) | 2026-10-29 | Shivansh (planned) |
+| MITRE tagging | Partial | PR #139; `eval/mitre.py`, `eval/test_mitre.py`. A keyword table of eight starter rows and a function that turns honeypot session events into tags with an evidence line. Exact-match test on the scripted attacker session (six tags; T1059.004 gives none, its keyword appears only in a reply). Every row is Unverified (ticket #86 not done). Not wired into the session view or the Console (ticket #75) | 2026-11-14 | Sharukh (planned) |
 | Rule generation from sessions | Designed | MimicNet spec; ticket #58 | 2026-10-22 | Shivansh (planned) |
 | Rule loading in CoverTrace | Designed | MimicNet spec; ticket #58 | 2026-10-22 | Shivansh (planned) |
 | Fingerprint evasion (banner variation) | Designed | MimicNet spec; ticket #59; first on the cut line | 2026-10-22 | Shivansh (planned) |
@@ -43,7 +43,7 @@ Status on 2026-10-21, taken from `main` at `ed8f510`. Expands `docs/specs/GkmkbS
 - FlowSight is a rule-based scorer on four window features. It has no trained classifier and no result on real traffic. The demo alert rests on it plus the CoverTrace entropy signal, both on crafted pcaps.
 - CoverTrace has one detector today: DNS subdomain entropy.
 - Pcaps are crafted lab data. No result here says anything about real traffic.
-- The tests in the repo pass on `main`: 165 passed, 24 skipped (`pytest -q`, run 2026-10-29). The skipped ones need MongoDB or are not run locally.
+- The tests in the repo pass on `main`: 196 passed, 25 skipped (`pytest -q`, run 2026-11-14). The skipped ones need MongoDB or are not run locally.
 - The only evaluation numbers are on crafted lab pcaps (`eval/results/crafted_results.csv`). They are synthetic. Nothing in the slides or report may quote them as detection rates on real traffic.
 
 ## Update rule

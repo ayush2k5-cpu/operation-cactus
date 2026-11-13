@@ -96,11 +96,11 @@ Full evidence is in `docs/Ledger.md`; this table keeps the states in step with i
 | Adaptive thresholds | Designed |
 | Correlation gate | Working (backend tests; the demo alert now rests on two real detectors) |
 | MimicNet honeypot, session recording | Partial: SSH-like shell and `engage` in one locked-down container, tested in CI; scripted attacker only; started from an Alert by the backend when `HONEYPOT_ENGAGE=1`, off by default |
-| MITRE mapping | Designed |
+| MITRE mapping | Partial: keyword table and tagging function on session events, tested on the scripted attacker; all rows Unverified, not shown in the Console |
 | Fingerprint evasion | Designed |
 | Rule generation, rule loading, closed-loop rules | Designed |
 | Evaluation harness | Partial: labels, metric functions and a runner on crafted pcaps; synthetic data only |
-| Paper 1 baseline retrain, MITRE table, consent record | Designed |
+| Paper 1 baseline retrain, MITRE table verification, consent record | Designed |
 | Backend API, WebSocket, storage | Partial: replay API, live events, REST lists, sessions, in-memory store; Mongo store not tested against a real database |
 | Compose stack (Mongo and backend) | Partial: run by hand on one laptop, not on a clean machine |
 | Dashboard | Partial: replay start, live feed, Alerts, Detections, Replays, threshold compare, session view for an engaged Alert, styled; no Rules view, no MITRE tags |
