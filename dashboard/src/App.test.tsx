@@ -62,6 +62,7 @@ type Backend = {
   replays: object[];
   detections: object[];
   alerts: object[];
+  session: object | null;
   post: () => { status: number; body: object };
   closeStatus: number;
   down: boolean;
@@ -81,6 +82,7 @@ beforeEach(() => {
     replays: [],
     detections: [],
     alerts: [],
+    session: null,
     post: () => ({ status: 200, body: { replay_id: "r1" } }),
     closeStatus: 200,
     down: false,
@@ -96,6 +98,10 @@ beforeEach(() => {
       if (url.startsWith("/api/detections")) return json(200, backend.detections);
       if (url.startsWith("/api/alerts") && !url.includes("/close"))
         return json(200, backend.alerts);
+      if (url.startsWith("/api/sessions/")) {
+        if (backend.session) return json(200, backend.session);
+        return json(404, { detail: "session not found" });
+      }
       if (url.includes("/close")) {
         if (backend.closeStatus === 200) return json(200, { status: "closed" });
         return json(backend.closeStatus, {
@@ -395,5 +401,47 @@ describe("Console", () => {
 
     await userEvent.click(await screen.findByRole("button", { name: "Close" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("already closed");
+  });
+
+  it("shows Open session button only when an Alert has a session id and updates live", async () => {
+    backend.session = {
+      session_id: "s-live-1",
+      alert_id: "a1",
+      service: "ssh-like",
+      started: "2026-10-21T10:00:00Z",
+      ended: null,
+      mitre: [{ technique_id: "T1033", name: "System Owner/User Discovery", evidence: "whoami" }],
+      events: [
+        { ts: "2026-10-21T10:00:00Z", type: "connect", data: { attacker_addr: "192.0.2.50" } },
+        { ts: "2026-10-21T10:00:01Z", type: "command", data: { line: "whoami" } },
+      ],
+    };
+
+    const socket = await openConsole();
+    socket.send({ type: "alert", replay_id: "r1", data: { ...alert, session_id: null } });
+    await screen.findByText(/high Alert/);
+    expect(screen.queryByRole("button", { name: "Open session" })).not.toBeInTheDocument();
+
+    socket.send({
+      type: "alert_engaged",
+      replay_id: "r1",
+      data: { alert_id: "a1", session_id: "s-live-1" },
+    });
+
+    const openBtn = await screen.findByRole("button", { name: "Open session" });
+    expect(openBtn).toBeInTheDocument();
+
+    await userEvent.click(openBtn);
+    expect(await screen.findByText(/Attacker address: 192.0.2.50/)).toBeInTheDocument();
+    expect(screen.getByText(/T1033 System Owner\/User Discovery: whoami/)).toBeInTheDocument();
+    expect(screen.getByRole("list", { name: "Session events" })).toHaveTextContent("whoami");
+
+    socket.send({
+      type: "session_event",
+      session_id: "s-live-1",
+      data: { ts: "2026-10-21T10:00:05Z", type: "command", data: { line: "cat /etc/shadow" } },
+    });
+
+    expect(await screen.findByText(/cat \/etc\/shadow/)).toBeInTheDocument();
   });
 });
