@@ -57,18 +57,30 @@ class TestMitreTable:
         actual_ids = {row.technique_id for row in MITRE_TABLE}
         assert expected_ids == actual_ids
 
-    def test_row_without_verified_date_is_unverified(self):
-        unverified_rows = [row for row in MITRE_TABLE if row.verified_date is None]
-        assert len(unverified_rows) == len(MITRE_TABLE), "all rows should be Unverified initially"
-
-        for row in unverified_rows:
-            events = [_make_event(row.keyword)]
-            tags = tag_events(events)
-            matching = [t for t in tags if t.technique_id == row.technique_id]
-            assert matching, f"no tag produced for keyword '{row.keyword}'"
-            assert UNVERIFIED in matching[0].evidence, (
-                f"expected '{UNVERIFIED}' in evidence for {row.technique_id}"
+    def test_every_row_has_verified_date_and_valid_url(self):
+        for row in MITRE_TABLE:
+            assert row.verified_date == "2026-11-14", f"{row.technique_id} is missing verified_date"
+            assert row.source_url.startswith("https://attack.mitre.org/techniques/"), (
+                f"{row.technique_id} has invalid source_url: {row.source_url}"
             )
+
+    def test_unverified_fallback_when_date_missing(self, monkeypatch):
+        test_table = [
+            MitreRow(
+                technique_id="T9999",
+                name="Unverified Technique",
+                keyword="unverified_cmd",
+                evidence_template="matched '{keyword}'",
+                source_url="https://attack.mitre.org/techniques/T9999/",
+                verified_date=None,
+            )
+        ]
+        monkeypatch.setattr("eval.mitre.MITRE_TABLE", test_table)
+        events = [_make_event("unverified_cmd")]
+        tags = tag_events(events)
+        assert len(tags) == 1
+        assert tags[0].technique_id == "T9999"
+        assert UNVERIFIED in tags[0].evidence
 
     def test_verified_date_appears_in_evidence_when_set(self):
         row = MitreRow(
@@ -94,32 +106,32 @@ class TestTagEvents:
             (
                 "T1033",
                 "System Owner/User Discovery",
-                "command matched user-discovery keyword 'whoami' [Unverified]",
+                "command matched user-discovery keyword 'whoami' [2026-11-14]",
             ),
             (
                 "T1082",
                 "System Information Discovery",
-                "command matched system-info keyword 'uname' [Unverified]",
+                "command matched system-info keyword 'uname' [2026-11-14]",
             ),
             (
                 "T1083",
                 "File and Directory Discovery",
-                "command matched file-discovery keyword 'cat /etc/passwd' [Unverified]",
+                "command matched file-discovery keyword 'cat /etc/passwd' [2026-11-14]",
             ),
             (
                 "T1071.004",
                 "Application Layer Protocol: DNS",
-                "command matched DNS-tunnel keyword 'iodine' [Unverified]",
+                "command matched DNS-tunnel keyword 'iodine' [2026-11-14]",
             ),
             (
                 "T1572",
                 "Protocol Tunneling",
-                "command matched tunneling keyword 'iodine -f' [Unverified]",
+                "command matched tunneling keyword 'iodine -f' [2026-11-14]",
             ),
             (
                 "T1048",
                 "Exfiltration Over Alternative Protocol",
-                "command matched exfiltration-channel keyword 'iodine' [Unverified]",
+                "command matched exfiltration-channel keyword 'iodine' [2026-11-14]",
             ),
         ]
 
