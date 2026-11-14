@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 from backend.gkmkb.api import create_app
 from backend.gkmkb.storage import MemoryStore, ReplayState
 from backend.test_pipeline import benign_labels, build, tunnel_labels
-from contracts.models import HoneypotSession, MitreTag, SessionEvent
+from contracts.models import HoneypotSession, MitreTag, Rule, SessionEvent
 
 
 @pytest.fixture
@@ -419,3 +419,224 @@ def test_no_honeypot_without_an_engage_function(data_dir, store, monkeypatch):
     replay_id, messages = replay_messages(client, "mix.pcap")
     assert not any(m["type"] in ("alert_engaged", "session_failed") for m in messages)
     assert store.list_alerts(replay_id=replay_id)[0].status == "open"
+
+
+def test_rules_list_and_create(data_dir, store):
+    client = TestClient(create_app(store, data_dir))
+    resp = client.get("/api/rules")
+    assert resp.status_code == 200
+    assert resp.json() == []
+
+    rule_data = {
+        "rule_id": "r-001",
+        "target": "covertrace",
+        "type": "ioc",
+        "match": {"qname_suffix": ".t.example.test"},
+        "session_id": "s-001",
+        "status": "proposed",
+    }
+    with client.websocket_connect("/ws/events") as ws:
+        create_resp = client.post("/api/rules", json=rule_data)
+        assert create_resp.status_code == 201
+        msg = ws.receive_json()
+        assert msg["type"] == "rule"
+        assert msg["data"]["rule_id"] == "r-001"
+        assert msg["data"]["status"] == "proposed"
+
+    resp = client.get("/api/rules")
+    assert resp.status_code == 200
+    rules = resp.json()
+    assert len(rules) == 1
+    assert rules[0]["rule_id"] == "r-001"
+    assert rules[0]["target"] == "covertrace"
+    assert rules[0]["match"] == {"qname_suffix": ".t.example.test"}
+    assert rules[0]["session_id"] == "s-001"
+    assert rules[0]["status"] == "proposed"
+
+
+def test_approve_proposed_rule_and_websocket_broadcast(data_dir, store):
+    client = TestClient(create_app(store, data_dir))
+    store.save_rule(
+        Rule(
+            rule_id="r-app-1",
+            target="covertrace",
+            type="ioc",
+            match={"qname_suffix": ".t.example.test"},
+            session_id="s-001",
+            status="proposed",
+        )
+    )
+
+    with client.websocket_connect("/ws/events") as ws:
+        resp = client.post("/api/rules/r-app-1/approve")
+        assert resp.status_code == 200
+        assert resp.json()["status"] == "active"
+        msg = ws.receive_json()
+        assert msg["type"] == "rule"
+        assert msg["data"]["rule_id"] == "r-app-1"
+        assert msg["data"]["status"] == "active"
+
+    assert store.get_rule("r-app-1").status == "active"
+
+
+def test_approve_non_proposed_rule_returns_409(data_dir, store):
+    client = TestClient(create_app(store, data_dir))
+    store.save_rule(
+        Rule(
+            rule_id="r-act",
+            target="covertrace",
+            type="ioc",
+            match={"qname_suffix": ".t.example.test"},
+            session_id="s-001",
+            status="active",
+        )
+    )
+    store.save_rule(
+        Rule(
+            rule_id="r-rej",
+            target="covertrace",
+            type="ioc",
+            match={"qname_suffix": ".t.example.test"},
+            session_id="s-001",
+            status="rejected",
+        )
+    )
+
+    resp = client.post("/api/rules/r-act/approve")
+    assert resp.status_code == 409
+    assert "cannot approve rule" in resp.json()["detail"]
+    assert store.get_rule("r-act").status == "active"
+
+    resp = client.post("/api/rules/r-rej/approve")
+    assert resp.status_code == 409
+    assert "cannot approve rule" in resp.json()["detail"]
+    assert store.get_rule("r-rej").status == "rejected"
+
+    resp = client.post("/api/rules/nonexistent/approve")
+    assert resp.status_code == 404
+
+
+def test_reject_proposed_rule_and_websocket_broadcast(data_dir, store):
+    client = TestClient(create_app(store, data_dir))
+    store.save_rule(
+        Rule(
+            rule_id="r-rej-1",
+            target="covertrace",
+            type="ioc",
+            match={"qname_suffix": ".t.example.test"},
+            session_id="s-001",
+            status="proposed",
+        )
+    )
+
+    with client.websocket_connect("/ws/events") as ws:
+        resp = client.post("/api/rules/r-rej-1/reject")
+        assert resp.status_code == 200
+        assert resp.json()["status"] == "rejected"
+        msg = ws.receive_json()
+        assert msg["type"] == "rule"
+        assert msg["data"]["rule_id"] == "r-rej-1"
+        assert msg["data"]["status"] == "rejected"
+
+    assert store.get_rule("r-rej-1").status == "rejected"
+
+
+def test_reject_non_proposed_rule_returns_409(data_dir, store):
+    client = TestClient(create_app(store, data_dir))
+    store.save_rule(
+        Rule(
+            rule_id="r-act",
+            target="covertrace",
+            type="ioc",
+            match={"qname_suffix": ".t.example.test"},
+            session_id="s-001",
+            status="active",
+        )
+    )
+    store.save_rule(
+        Rule(
+            rule_id="r-rej",
+            target="covertrace",
+            type="ioc",
+            match={"qname_suffix": ".t.example.test"},
+            session_id="s-001",
+            status="rejected",
+        )
+    )
+
+    resp = client.post("/api/rules/r-act/reject")
+    assert resp.status_code == 409
+    assert store.get_rule("r-act").status == "active"
+
+    resp = client.post("/api/rules/r-rej/reject")
+    assert resp.status_code == 409
+    assert store.get_rule("r-rej").status == "rejected"
+
+    resp = client.post("/api/rules/nonexistent/reject")
+    assert resp.status_code == 404
+
+
+def test_rejected_rule_has_no_effect_on_detection(data_dir, store):
+    client = TestClient(create_app(store, data_dir))
+    store.save_rule(
+        Rule(
+            rule_id="r-rej-tunnel",
+            target="covertrace",
+            type="ioc",
+            match={"qname_suffix": ".t.example.test"},
+            session_id="s-001",
+            status="rejected",
+        )
+    )
+    replay_id, messages = replay_messages(client, "control.pcap")
+    rule_detections = [
+        m
+        for m in messages
+        if m["type"] == "detection"
+        and m["data"]["score"] == 1.0
+        and m["data"]["label"].startswith("rule:")
+    ]
+    assert rule_detections == []
+
+
+def test_approved_rule_loaded_into_covertrace_re_replay_shows_rule_hit(data_dir, store):
+    build(
+        data_dir / "short_tunnel.pcap",
+        [("10.0.0.5", tunnel_labels(5), [0.1])],
+    )
+    client = TestClient(create_app(store, data_dir))
+
+    rule_resp = client.post(
+        "/api/rules",
+        json={
+            "rule_id": "r-short-1",
+            "target": "covertrace",
+            "type": "ioc",
+            "match": {"qname_suffix": ".t.example.test"},
+            "session_id": "s-001",
+            "status": "proposed",
+        },
+    )
+    assert rule_resp.status_code == 201
+
+    replay_1, msgs_1 = replay_messages(client, "short_tunnel.pcap")
+    assert [m for m in msgs_1 if m["type"] == "detection"] == []
+    assert store.list_detections(replay_id=replay_1) == []
+
+    app_resp = client.post("/api/rules/r-short-1/approve")
+    assert app_resp.status_code == 200
+    assert app_resp.json()["status"] == "active"
+
+    replay_2, msgs_2 = replay_messages(client, "short_tunnel.pcap")
+    detections = [m for m in msgs_2 if m["type"] == "detection"]
+    assert len(detections) == 1
+    hit = detections[0]["data"]
+    assert hit["score"] == 1.0
+    assert hit["label"] == "rule:r-short-1"
+    assert hit["features"] == {"rule_hit": 1.0}
+    assert hit["source"] == "covertrace"
+
+    stored = store.list_detections(replay_id=replay_2)
+    assert len(stored) == 1
+    assert stored[0].label == "rule:r-short-1"
+    assert stored[0].score == 1.0

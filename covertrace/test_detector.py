@@ -6,6 +6,7 @@ from scapy.layers.l2 import Ether
 from scapy.utils import wrpcap
 
 from capture.replay import ReplaySource
+from contracts.models import Rule
 from covertrace.detector import CoverTrace, CoverTraceConfig, load_config
 
 T0 = 1_760_000_000.0
@@ -75,3 +76,81 @@ def test_settings_file_changes_behaviour(tmp_path):
     assert run(pcap, load_config(settings)) == []
     settings.write_text("min_queries = 25\n", encoding="utf-8")
     assert run(pcap, load_config(settings))[0].features["query_count"] == 25.0
+
+
+def test_active_rule_with_qname_suffix_triggers_immediate_detection(tmp_path):
+    pcap = make_pcap(tmp_path / "few.pcap", "10.0.0.5", tunnel_names(5))
+    rule = Rule(
+        rule_id="r-suffix-1",
+        target="covertrace",
+        type="ioc",
+        match={"qname_suffix": ".t.example.test"},
+        session_id="s-1",
+        status="active",
+    )
+    cover = CoverTrace(rules=[rule])
+    detections = [d for f in ReplaySource(pcap).flows() if (d := cover.analyze(f))]
+    assert len(detections) == 1
+    det = detections[0]
+    assert det.score == 1.0
+    assert det.label == "rule:r-suffix-1"
+    assert det.features == {"rule_hit": 1.0}
+    assert det.source == "covertrace"
+    assert det.entity.src_ip == "10.0.0.5"
+
+
+def test_proposed_or_rejected_rule_does_not_trigger(tmp_path):
+    pcap = make_pcap(tmp_path / "few.pcap", "10.0.0.5", tunnel_names(5))
+    rules = [
+        Rule(
+            rule_id="r-prop",
+            target="covertrace",
+            type="ioc",
+            match={"qname_suffix": ".t.example.test"},
+            session_id="s-1",
+            status="proposed",
+        ),
+        Rule(
+            rule_id="r-rej",
+            target="covertrace",
+            type="ioc",
+            match={"qname_suffix": ".t.example.test"},
+            session_id="s-1",
+            status="rejected",
+        ),
+    ]
+    cover = CoverTrace(rules=rules)
+    detections = [d for f in ReplaySource(pcap).flows() if (d := cover.analyze(f))]
+    assert detections == []
+
+
+def test_active_rule_with_src_ip_triggers_immediate_detection(tmp_path):
+    pcap = make_pcap(tmp_path / "few.pcap", "10.0.0.5", tunnel_names(3))
+    rule = Rule(
+        rule_id="r-ip-1",
+        target="covertrace",
+        type="ioc",
+        match={"src_ip": "10.0.0.5"},
+        session_id="s-1",
+        status="active",
+    )
+    cover = CoverTrace(rules=[rule])
+    detections = [d for f in ReplaySource(pcap).flows() if (d := cover.analyze(f))]
+    assert len(detections) == 1
+    assert detections[0].label == "rule:r-ip-1"
+    assert detections[0].score == 1.0
+
+
+def test_flowsight_target_rule_ignored_by_covertrace(tmp_path):
+    pcap = make_pcap(tmp_path / "few.pcap", "10.0.0.5", tunnel_names(5))
+    rule = Rule(
+        rule_id="r-fs-1",
+        target="flowsight",
+        type="ioc",
+        match={"qname_suffix": ".t.example.test"},
+        session_id="s-1",
+        status="active",
+    )
+    cover = CoverTrace(rules=[rule])
+    detections = [d for f in ReplaySource(pcap).flows() if (d := cover.analyze(f))]
+    assert detections == []
