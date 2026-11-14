@@ -60,4 +60,34 @@ describe("honeypot messages", () => {
     });
     expect(feed.sessionEvents["s-1"]).toEqual([event]);
   });
+
+  it("adds and updates live rules without duplicates", () => {
+    const rule1 = {
+      rule_id: "r-1",
+      target: "covertrace" as const,
+      type: "ioc" as const,
+      match: { qname_suffix: ".t.example.test" },
+      session_id: "s-1",
+      status: "proposed" as const,
+    };
+    let feed = applyMessage(emptyFeed, { type: "rule", data: rule1 });
+    expect(feed.rules).toEqual([rule1]);
+
+    const rule1Approved = { ...rule1, status: "active" as const };
+    feed = applyMessage(feed, { type: "rule", data: rule1Approved });
+    expect(feed.rules).toHaveLength(1);
+    expect(feed.rules[0].status).toBe("active");
+
+    const rule2 = {
+      rule_id: "r-2",
+      target: "covertrace" as const,
+      type: "ioc" as const,
+      match: { src_ip: "10.0.0.5" },
+      session_id: "s-2",
+      status: "proposed" as const,
+    };
+    feed = applyMessage(feed, { type: "rule", data: rule2 });
+    expect(feed.rules).toHaveLength(2);
+    expect(feed.rules[1].rule_id).toBe("r-2");
+  });
 });
