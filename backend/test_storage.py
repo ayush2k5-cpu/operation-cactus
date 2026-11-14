@@ -19,7 +19,7 @@ from backend.gkmkb.storage import (
     ReplayState,
     StorageBase,
 )
-from contracts.models import Alert, Detection, Entity, HoneypotSession, MitreTag, SessionEvent
+from contracts.models import Alert, Detection, Entity, HoneypotSession, MitreTag, Rule, SessionEvent
 
 T0 = datetime(2026, 10, 20, 10, 0, 0, tzinfo=UTC)
 MONGO_URI = os.environ.get("MONGO_URI", "")
@@ -351,3 +351,80 @@ def test_save_session_upsert(store_fixture, request):
     got = store.get_session("s-001")
     assert got is not None
     assert got.service == "telnet"
+
+
+def _rule(
+    rule_id: str = "r-001",
+    target: str = "covertrace",
+    rule_type: str = "ioc",
+    match: dict | None = None,
+    session_id: str = "s-001",
+    status: str = "proposed",
+) -> Rule:
+    return Rule(
+        rule_id=rule_id,
+        target=target,  # type: ignore[arg-type]
+        type=rule_type,  # type: ignore[arg-type]
+        match=match or {"qname_suffix": ".t.example.test"},
+        session_id=session_id,
+        status=status,  # type: ignore[arg-type]
+    )
+
+
+@pytest.mark.parametrize("store_fixture", STORE_FIXTURES)
+def test_save_and_get_rule(store_fixture, request):
+    store: StorageBase = request.getfixturevalue(store_fixture)
+    r = _rule()
+    store.save_rule(r)
+    got = store.get_rule("r-001")
+    assert got is not None
+    assert got.rule_id == "r-001"
+    assert got.target == "covertrace"
+    assert got.status == "proposed"
+    assert got.match == {"qname_suffix": ".t.example.test"}
+    assert got.session_id == "s-001"
+
+
+@pytest.mark.parametrize("store_fixture", STORE_FIXTURES)
+def test_get_rule_missing_returns_none(store_fixture, request):
+    store: StorageBase = request.getfixturevalue(store_fixture)
+    assert store.get_rule("nonexistent-rule") is None
+
+
+@pytest.mark.parametrize("store_fixture", STORE_FIXTURES)
+def test_list_rules_and_filter_by_status(store_fixture, request):
+    store: StorageBase = request.getfixturevalue(store_fixture)
+    store.save_rule(_rule("r-1", status="proposed"))
+    store.save_rule(_rule("r-2", status="active"))
+    store.save_rule(_rule("r-3", status="proposed"))
+
+    all_rules = store.list_rules()
+    assert len(all_rules) == 3
+
+    proposed = store.list_rules(status="proposed")
+    assert len(proposed) == 2
+    assert {r.rule_id for r in proposed} == {"r-1", "r-3"}
+
+    active = store.list_rules(status="active")
+    assert len(active) == 1
+    assert active[0].rule_id == "r-2"
+
+    limited = store.list_rules(limit=2)
+    assert len(limited) == 2
+
+
+@pytest.mark.parametrize("store_fixture", STORE_FIXTURES)
+def test_update_rule_status(store_fixture, request):
+    store: StorageBase = request.getfixturevalue(store_fixture)
+    store.save_rule(_rule("r-1", status="proposed"))
+
+    updated = store.update_rule_status("r-1", "active")
+    assert updated is not None
+    assert updated.status == "active"
+
+    got = store.get_rule("r-1")
+    assert got is not None
+    assert got.status == "active"
+
+    missing = store.update_rule_status("missing-rule", "active")
+    assert missing is None

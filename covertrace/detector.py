@@ -9,7 +9,7 @@ import tomllib
 from dataclasses import dataclass, field, fields
 from pathlib import Path
 
-from contracts.models import Detection, FlowRecord
+from contracts.models import Detection, Entity, FlowRecord, Rule
 from covertrace.dns import DnsEntropyConfig, DnsEntropyDetector
 
 SETTINGS_PATH = Path(__file__).with_name("settings.toml")
@@ -35,8 +35,33 @@ def load_config(path: str | Path = SETTINGS_PATH) -> CoverTraceConfig:
     return CoverTraceConfig(**{k: v for k, v in values.items() if k in known})
 
 
+def _matches_rule(rule: Rule, flow: FlowRecord) -> bool:
+    if not rule.match:
+        return False
+    if "qname_suffix" in rule.match:
+        suffix = str(rule.match["qname_suffix"]).strip(".").lower()
+        matched = False
+        for q in flow.dns_queries:
+            qn = q.qname.strip(".").lower()
+            if qn == suffix or qn.endswith("." + suffix):
+                matched = True
+                break
+        if not matched:
+            return False
+
+    if "src_ip" in rule.match:
+        if flow.src_ip != str(rule.match["src_ip"]):
+            return False
+
+    return True
+
+
 class CoverTrace:
-    def __init__(self, config: CoverTraceConfig | None = None):
+    def __init__(
+        self,
+        config: CoverTraceConfig | None = None,
+        rules: list[Rule] | None = None,
+    ):
         self.config = config or load_config()
         c = self.config
         self._checkers = [
@@ -51,11 +76,36 @@ class CoverTrace:
         ]
         self._flagged: set[tuple[str, str]] = set()
         self._count = 0
+        self._rules: list[Rule] = []
+        if rules:
+            self.load_rules(rules)
+
+    def load_rules(self, rules: list[Rule]) -> None:
+        self._rules = [r for r in rules if r.target == "covertrace" and r.status == "active"]
 
     def analyze(self, flow: FlowRecord) -> Detection | None:
-        found = [d for checker in self._checkers if (d := checker.analyze(flow)) is not None]
         key = (flow.src_ip, flow.dst_ip)
-        if not found or key in self._flagged:
+        if key in self._flagged:
+            return None
+
+        for rule in self._rules:
+            if _matches_rule(rule, flow):
+                self._flagged.add(key)
+                self._count += 1
+                return Detection(
+                    detection_id=f"covertrace-{self._count:04d}",
+                    source="covertrace",
+                    flow_id=flow.flow_id,
+                    entity=Entity(src_ip=flow.src_ip, dst_ip=flow.dst_ip),
+                    ts=flow.end_ts,
+                    score=1.0,
+                    label=f"rule:{rule.rule_id}",
+                    features={"rule_hit": 1.0},
+                    threshold_used=self.config.entropy_threshold,
+                )
+
+        found = [d for checker in self._checkers if (d := checker.analyze(flow)) is not None]
+        if not found:
             return None
         self._flagged.add(key)
         self._count += 1
