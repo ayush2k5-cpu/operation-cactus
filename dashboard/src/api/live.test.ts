@@ -50,4 +50,14 @@ describe("honeypot messages", () => {
     });
     expect(feed.notice).toBe("No honeypot session: RuntimeError: Docker is not running");
   });
+
+  it("appends live session events for a session", () => {
+    const event = { ts: "2026-10-20T10:00:00Z", type: "connect", data: { attacker_addr: "192.0.2.50" } };
+    const feed = applyMessage(emptyFeed, {
+      type: "session_event",
+      session_id: "s-1",
+      data: event,
+    });
+    expect(feed.sessionEvents["s-1"]).toEqual([event]);
+  });
 });

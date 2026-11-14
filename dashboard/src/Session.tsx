@@ -1,7 +1,13 @@
 import { useEffect, useState } from "react";
-import { type Session, getSession } from "./api/client";
+import { type Session, type SessionEvent, getSession } from "./api/client";
 
-export function SessionView({ sessionId }: { sessionId: string }) {
+export function SessionView({
+  sessionId,
+  liveEvents = [],
+}: {
+  sessionId: string;
+  liveEvents?: SessionEvent[];
+}) {
   const [session, setSession] = useState<Session | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -17,21 +23,37 @@ export function SessionView({ sessionId }: { sessionId: string }) {
   if (error) return <p role="alert">{error}</p>;
   if (!session) return <p>Loading the session...</p>;
 
-  const events = [...session.events].sort((a, b) => a.ts.localeCompare(b.ts));
-  const attacker = events.find((e) => e.type === "connect")?.data.attacker_addr;
+  const seen = new Set<string>();
+  const allEvents: SessionEvent[] = [];
+  for (const e of [...session.events, ...liveEvents]) {
+    const key = `${e.ts}|${e.type}|${JSON.stringify(e.data)}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      allEvents.push(e);
+    }
+  }
+  allEvents.sort((a, b) => a.ts.localeCompare(b.ts));
+
+  const connectEvent = allEvents.find((e) => e.type === "connect");
+  const attacker = connectEvent?.data.attacker_addr ?? connectEvent?.data.src;
+
   return (
     <div aria-label="Honeypot session">
       <h4>Honeypot session {session.session_id}</h4>
       {attacker && <p>Attacker address: {attacker}</p>}
-      <ol aria-label="Session events">
-        {events.map((e, i) => (
-          <li key={i}>
-            {e.ts} {e.type} {e.data.line ?? e.data.reason ?? ""}
-          </li>
-        ))}
-      </ol>
+      {allEvents.length === 0 ? (
+        <p>No events recorded in this session.</p>
+      ) : (
+        <ol aria-label="Session events">
+          {allEvents.map((e, i) => (
+            <li key={i}>
+              {e.ts} {e.type} {e.data.line ?? e.data.cmd ?? e.data.reason ?? ""}
+            </li>
+          ))}
+        </ol>
+      )}
       {session.mitre.length === 0 ? (
-        <p>MITRE tags: none yet</p>
+        <p>MITRE tags: no tag</p>
       ) : (
         <ul aria-label="MITRE tags">
           {session.mitre.map((t) => (

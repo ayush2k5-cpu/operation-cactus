@@ -4,6 +4,7 @@ import {
   type Alert,
   type Detection,
   type ReplayRecord,
+  type SessionEvent,
   closeAlert,
   listAlerts,
   listDetections,
@@ -186,9 +187,10 @@ type AlertRowProps = {
   a: Alert;
   onClose: (id: string) => void;
   closeMsg: string | null;
+  liveEvents?: SessionEvent[];
 };
 
-function AlertRow({ a, onClose, closeMsg }: AlertRowProps) {
+function AlertRow({ a, onClose, closeMsg, liveEvents }: AlertRowProps) {
   const [showSession, setShowSession] = useState(false);
   return (
     <li data-severity={a.severity} className="alert-row" data-status={a.status}>
@@ -202,7 +204,9 @@ function AlertRow({ a, onClose, closeMsg }: AlertRowProps) {
         </button>
       )}
       {closeMsg && <span role="alert">{closeMsg}</span>}
-      {showSession && a.session_id && <SessionView sessionId={a.session_id} />}
+      {showSession && a.session_id && (
+        <SessionView sessionId={a.session_id} liveEvents={liveEvents} />
+      )}
     </li>
   );
 }
@@ -498,6 +502,7 @@ export function App({ reconnectMs = 1000 }: { reconnectMs?: number }) {
               a={a}
               onClose={handleCloseAlert}
               closeMsg={closeMsgs[a.alert_id] ?? null}
+              liveEvents={a.session_id ? feed.sessionEvents[a.session_id] : undefined}
             />
           ))}
         </ul>
