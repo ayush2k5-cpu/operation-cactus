@@ -16,6 +16,15 @@ export type Session = {
   mitre: MitreTag[];
 };
 
+export type Rule = {
+  rule_id: string;
+  target: "flowsight" | "covertrace";
+  type: "ioc" | "threshold";
+  match: Record<string, string | number>;
+  session_id: string;
+  status: "proposed" | "approved" | "active" | "rejected";
+};
+
 export class ApiError extends Error {
   constructor(
     readonly status: number,
@@ -59,3 +68,9 @@ export const closeAlert = (alertId: string) =>
     method: "POST",
   });
 export const getSession = (sessionId: string) => request<Session>(`/api/sessions/${sessionId}`);
+export const listRules = (status?: string) =>
+  request<Rule[]>(status ? `/api/rules?status=${status}&limit=500` : "/api/rules?limit=500");
+export const approveRule = (ruleId: string) =>
+  request<Rule>(`/api/rules/${ruleId}/approve`, { method: "POST" });
+export const rejectRule = (ruleId: string) =>
+  request<Rule>(`/api/rules/${ruleId}/reject`, { method: "POST" });

@@ -63,6 +63,7 @@ type Backend = {
   detections: object[];
   alerts: object[];
   session: object | null;
+  rules: object[];
   post: () => { status: number; body: object };
   closeStatus: number;
   down: boolean;
@@ -83,6 +84,7 @@ beforeEach(() => {
     detections: [],
     alerts: [],
     session: null,
+    rules: [],
     post: () => ({ status: 200, body: { replay_id: "r1" } }),
     closeStatus: 200,
     down: false,
@@ -98,6 +100,7 @@ beforeEach(() => {
       if (url.startsWith("/api/detections")) return json(200, backend.detections);
       if (url.startsWith("/api/alerts") && !url.includes("/close"))
         return json(200, backend.alerts);
+      if (url.startsWith("/api/rules")) return json(200, backend.rules);
       if (url.startsWith("/api/sessions/")) {
         if (backend.session) return json(200, backend.session);
         return json(404, { detail: "session not found" });
@@ -443,5 +446,34 @@ describe("Console", () => {
     });
 
     expect(await screen.findByText(/cat \/etc\/shadow/)).toBeInTheDocument();
+  });
+
+  it("navigates to Rules view, shows live rules, and returns to live feed", async () => {
+    const socket = await openConsole();
+    const rulesBtn = screen.getByRole("button", { name: "Rules" });
+    expect(rulesBtn).toBeInTheDocument();
+
+    await userEvent.click(rulesBtn);
+    expect(await screen.findByRole("heading", { name: "Detection Rules" })).toBeInTheDocument();
+    expect(screen.getByText("No Rules yet.")).toBeInTheDocument();
+
+    socket.send({
+      type: "rule",
+      data: {
+        rule_id: "r-live-1",
+        target: "covertrace",
+        type: "ioc",
+        match: { qname_suffix: ".t.example.test" },
+        session_id: "s-1",
+        status: "proposed",
+      },
+    });
+
+    expect(await screen.findByText(/r-live-1/)).toBeInTheDocument();
+    expect(screen.getByText(/\[proposed\]/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Approve" })).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Back to live feed" }));
+    expect(await screen.findByText("Start replay")).toBeInTheDocument();
   });
 });
