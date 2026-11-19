@@ -152,3 +152,22 @@ def test_demo_pcap_raises_one_alert_on_the_tunnel_entity():
     result = run(DEMO)
     assert [a.entity.src_ip for a in result.alerts] == ["10.0.2.20"]
     assert run(CONTROL).alerts == []
+
+
+def test_engage_failure_is_logged_and_alert_remains_open(tunnel_and_benign, caplog):
+    def failing_engage(alert):
+        raise RuntimeError("honeypot backend connection refused")
+
+    with caplog.at_level("ERROR"):
+        result = run(tunnel_and_benign, engage_fn=failing_engage)
+
+    assert len(result.alerts) == 1
+    assert result.alerts[0].status == "open"
+    assert result.alerts[0].session_id is None
+    assert result.session is None
+    assert result.rules == []
+    assert any(
+        "Engagement failed for alert" in r.message
+        and "honeypot backend connection refused" in r.message
+        for r in caplog.records
+    )
