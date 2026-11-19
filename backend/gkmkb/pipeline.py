@@ -1,5 +1,6 @@
 """Wire a capture source, the detectors and the gate. Only the backend does this wiring."""
 
+import logging
 from collections.abc import Callable, Iterable, Iterator
 from dataclasses import dataclass, field, replace
 from pathlib import Path
@@ -11,6 +12,8 @@ from capture.replay import ReplaySource
 from contracts.models import Alert, Detection, FlowRecord, HoneypotSession, Rule
 from covertrace.detector import CoverTrace, load_config
 from flowsight.detector import FlowSight, FlowSightConfig
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -100,8 +103,13 @@ def run(
                     )
                     result.session = session
                     result.rules.extend(proposed_rules)
-                except Exception:
-                    pass
+                except Exception as exc:
+                    logger.error(
+                        "Engagement failed for alert %s: %s",
+                        event.alert_id,
+                        exc,
+                        exc_info=True,
+                    )
             result.alerts.append(event)
         else:
             result.detections.append(event)

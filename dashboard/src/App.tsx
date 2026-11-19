@@ -4,6 +4,7 @@ import {
   type Alert,
   type Detection,
   type ReplayRecord,
+  type SessionEvent,
   closeAlert,
   listAlerts,
   listDetections,
@@ -22,6 +23,7 @@ import {
   type Replay,
 } from "./api/live";
 import { Compare } from "./Compare";
+import { Rules } from "./Rules";
 import "./styles.css";
 
 const BACKEND_DOWN = "Backend is down. Start the backend and try again.";
@@ -186,9 +188,10 @@ type AlertRowProps = {
   a: Alert;
   onClose: (id: string) => void;
   closeMsg: string | null;
+  liveEvents?: SessionEvent[];
 };
 
-function AlertRow({ a, onClose, closeMsg }: AlertRowProps) {
+function AlertRow({ a, onClose, closeMsg, liveEvents }: AlertRowProps) {
   const [showSession, setShowSession] = useState(false);
   return (
     <li data-severity={a.severity} className="alert-row" data-status={a.status}>
@@ -202,7 +205,9 @@ function AlertRow({ a, onClose, closeMsg }: AlertRowProps) {
         </button>
       )}
       {closeMsg && <span role="alert">{closeMsg}</span>}
-      {showSession && a.session_id && <SessionView sessionId={a.session_id} />}
+      {showSession && a.session_id && (
+        <SessionView sessionId={a.session_id} liveEvents={liveEvents} />
+      )}
     </li>
   );
 }
@@ -288,6 +293,7 @@ type View =
   | { kind: "live" }
   | { kind: "replays" }
   | { kind: "compare" }
+  | { kind: "rules" }
   | { kind: "replay"; record: ReplayRecord };
 
 export function App({ reconnectMs = 1000 }: { reconnectMs?: number }) {
@@ -398,6 +404,7 @@ export function App({ reconnectMs = 1000 }: { reconnectMs?: number }) {
           <nav className="tabs">
             <button onClick={() => setView({ kind: "live" })}>Live view</button>
             <button onClick={() => setView({ kind: "compare" })}>Compare thresholds</button>
+            <button onClick={() => setView({ kind: "rules" })}>Rules</button>
           </nav>
         }
       >
@@ -429,6 +436,18 @@ export function App({ reconnectMs = 1000 }: { reconnectMs?: number }) {
     );
   }
 
+  if (view.kind === "rules") {
+    return (
+      <Shell live={!socketDown}>
+        <Rules
+          liveRules={feed.rules}
+          onBack={() => setView({ kind: "live" })}
+          backendDown={!!error}
+        />
+      </Shell>
+    );
+  }
+
   if (view.kind === "replay") {
     return (
       <Shell live={!socketDown}>
@@ -448,6 +467,7 @@ export function App({ reconnectMs = 1000 }: { reconnectMs?: number }) {
       nav={
         <nav className="tabs">
           <button onClick={openReplays}>Past Replays</button>
+          <button onClick={() => setView({ kind: "rules" })}>Rules</button>
         </nav>
       }
     >
@@ -498,6 +518,7 @@ export function App({ reconnectMs = 1000 }: { reconnectMs?: number }) {
               a={a}
               onClose={handleCloseAlert}
               closeMsg={closeMsgs[a.alert_id] ?? null}
+              liveEvents={a.session_id ? feed.sessionEvents[a.session_id] : undefined}
             />
           ))}
         </ul>
