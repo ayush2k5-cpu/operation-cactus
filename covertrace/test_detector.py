@@ -6,6 +6,7 @@ from scapy.layers.l2 import Ether
 from scapy.utils import wrpcap
 
 from capture.replay import ReplaySource
+from contracts.models import Rule
 from covertrace.detector import CoverTrace, CoverTraceConfig, load_config
 
 T0 = 1_760_000_000.0
@@ -32,8 +33,8 @@ def tunnel_names(n, seed=1):
     return ["".join(rng.choice(ALPHABET) for _ in range(32)) + ".t.example.test." for _ in range(n)]
 
 
-def run(pcap, config=None):
-    cover = CoverTrace(config)
+def run(pcap, config=None, rules=None):
+    cover = CoverTrace(config, rules=rules)
     return [d for f in ReplaySource(pcap).flows() if (d := cover.analyze(f))]
 
 
@@ -75,3 +76,101 @@ def test_settings_file_changes_behaviour(tmp_path):
     assert run(pcap, load_config(settings)) == []
     settings.write_text("min_queries = 25\n", encoding="utf-8")
     assert run(pcap, load_config(settings))[0].features["query_count"] == 25.0
+
+
+def test_active_rule_with_qname_suffix_triggers_immediate_detection(tmp_path):
+    pcap = make_pcap(tmp_path / "few.pcap", "10.0.0.5", tunnel_names(5))
+    rule = Rule(
+        rule_id="r-suffix-1",
+        target="covertrace",
+        type="ioc",
+        match={"qname_suffix": ".t.example.test"},
+        session_id="s-1",
+        status="active",
+    )
+    detections = run(pcap, rules=[rule])
+    assert len(detections) == 1
+    det = detections[0]
+    assert det.score == 1.0
+    assert det.label == "rule:r-suffix-1"
+    assert det.features == {"rule_hit": 1.0}
+    assert det.source == "covertrace"
+    assert det.entity.src_ip == "10.0.0.5"
+
+
+def test_proposed_or_rejected_rule_does_not_trigger(tmp_path):
+    pcap = make_pcap(tmp_path / "few.pcap", "10.0.0.5", tunnel_names(5))
+    rules = [
+        Rule(
+            rule_id="r-prop",
+            target="covertrace",
+            type="ioc",
+            match={"qname_suffix": ".t.example.test"},
+            session_id="s-1",
+            status="proposed",
+        ),
+        Rule(
+            rule_id="r-rej",
+            target="covertrace",
+            type="ioc",
+            match={"qname_suffix": ".t.example.test"},
+            session_id="s-1",
+            status="rejected",
+        ),
+    ]
+    detections = run(pcap, rules=rules)
+    assert detections == []
+
+
+def test_active_rule_with_src_ip_triggers_immediate_detection(tmp_path):
+    pcap = make_pcap(tmp_path / "few.pcap", "10.0.0.5", tunnel_names(3))
+    rule = Rule(
+        rule_id="r-ip-1",
+        target="covertrace",
+        type="ioc",
+        match={"src_ip": "10.0.0.5"},
+        session_id="s-1",
+        status="active",
+    )
+    detections = run(pcap, rules=[rule])
+    assert len(detections) == 1
+    assert detections[0].label == "rule:r-ip-1"
+    assert detections[0].score == 1.0
+
+
+def test_flowsight_target_rule_ignored_by_covertrace(tmp_path):
+    pcap = make_pcap(tmp_path / "few.pcap", "10.0.0.5", tunnel_names(5))
+    rule = Rule(
+        rule_id="r-fs-1",
+        target="flowsight",
+        type="ioc",
+        match={"qname_suffix": ".t.example.test"},
+        session_id="s-1",
+        status="active",
+    )
+    detections = run(pcap, rules=[rule])
+    assert detections == []
+
+
+def test_approved_rule_raises_score_on_re_replay(tmp_path):
+    pcap = make_pcap(tmp_path / "t30.pcap", "10.0.0.5", tunnel_names(30))
+
+    # First run without any rule
+    baseline_dets = run(pcap)
+    assert len(baseline_dets) == 1
+    assert baseline_dets[0].score < 1.0
+
+    # Re-replay with approved/active rule
+    rule = Rule(
+        rule_id="r-approved-1",
+        target="covertrace",
+        type="ioc",
+        match={"qname_suffix": "t.example.test"},
+        session_id="s-demo",
+        status="active",
+    )
+    replay_dets = run(pcap, rules=[rule])
+    assert len(replay_dets) == 1
+    assert replay_dets[0].score == 1.0
+    assert replay_dets[0].score > baseline_dets[0].score
+    assert replay_dets[0].label == "rule:r-approved-1"
