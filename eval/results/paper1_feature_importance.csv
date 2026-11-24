@@ -1,0 +1,9 @@
+Feature,Module,Tree_Importance,Permutation_Mean,Permutation_Std
+flow_avg_pkt_size_log,FlowSight,2.48%,0.20%,0.46%
+flow_pkt_size_variance,FlowSight,3.47%,0.55%,0.72%
+flow_iat_mean_ms,FlowSight,2.53%,0.10%,0.44%
+flow_burst_ratio,FlowSight,2.60%,-0.15%,0.32%
+dns_subdomain_entropy,CoverTrace,2.55%,0.05%,0.15%
+icmp_timing_chi2,CoverTrace,2.53%,0.35%,0.23%
+http_header_anomaly_score,CoverTrace,28.84%,1.05%,0.57%
+protocol_struct_deviation,CoverTrace,55.00%,1.25%,0.46%
