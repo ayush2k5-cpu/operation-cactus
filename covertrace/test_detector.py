@@ -88,7 +88,8 @@ def test_active_rule_with_qname_suffix_triggers_immediate_detection(tmp_path):
         session_id="s-1",
         status="active",
     )
-    detections = run(pcap, rules=[rule])
+    cover = CoverTrace(rules=[rule])
+    detections = [d for f in ReplaySource(pcap).flows() if (d := cover.analyze(f))]
     assert len(detections) == 1
     det = detections[0]
     assert det.score == 1.0
@@ -96,6 +97,7 @@ def test_active_rule_with_qname_suffix_triggers_immediate_detection(tmp_path):
     assert det.features == {"rule_hit": 1.0}
     assert det.source == "covertrace"
     assert det.entity.src_ip == "10.0.0.5"
+    assert run(pcap, rules=[rule]) == detections
 
 
 def test_proposed_or_rejected_rule_does_not_trigger(tmp_path):
@@ -118,8 +120,10 @@ def test_proposed_or_rejected_rule_does_not_trigger(tmp_path):
             status="rejected",
         ),
     ]
-    detections = run(pcap, rules=rules)
+    cover = CoverTrace(rules=rules)
+    detections = [d for f in ReplaySource(pcap).flows() if (d := cover.analyze(f))]
     assert detections == []
+    assert run(pcap, rules=rules) == []
 
 
 def test_active_rule_with_src_ip_triggers_immediate_detection(tmp_path):
@@ -132,10 +136,12 @@ def test_active_rule_with_src_ip_triggers_immediate_detection(tmp_path):
         session_id="s-1",
         status="active",
     )
-    detections = run(pcap, rules=[rule])
+    cover = CoverTrace(rules=[rule])
+    detections = [d for f in ReplaySource(pcap).flows() if (d := cover.analyze(f))]
     assert len(detections) == 1
     assert detections[0].label == "rule:r-ip-1"
     assert detections[0].score == 1.0
+    assert run(pcap, rules=[rule]) == detections
 
 
 def test_flowsight_target_rule_ignored_by_covertrace(tmp_path):
@@ -148,8 +154,10 @@ def test_flowsight_target_rule_ignored_by_covertrace(tmp_path):
         session_id="s-1",
         status="active",
     )
-    detections = run(pcap, rules=[rule])
+    cover = CoverTrace(rules=[rule])
+    detections = [d for f in ReplaySource(pcap).flows() if (d := cover.analyze(f))]
     assert detections == []
+    assert run(pcap, rules=[rule]) == []
 
 
 def test_approved_rule_raises_score_on_re_replay(tmp_path):
