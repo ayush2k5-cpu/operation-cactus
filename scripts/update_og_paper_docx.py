@@ -3,7 +3,8 @@
 Preserves the exact original formatting, fonts, styles, tables, formula blocks,
 margins, headers/footers, and section structure of the OG docx, while updating
 all data, numbers, tables, figures, and reviewer comments, and eliminating any
-spacing flaws.
+spacing flaws. Specifically guarantees all Evaluation Metric formulas (Accuracy,
+Precision, Recall, Specificity, F1) remain tightly bound on the same page.
 """
 
 from __future__ import annotations
@@ -13,6 +14,8 @@ import shutil
 from pathlib import Path
 
 from docx import Document
+from docx.oxml import parse_xml
+from docx.oxml.ns import nsdecls
 from docx.shared import Pt
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -73,6 +76,19 @@ def set_cell(cell, text: str, font_size=8.0, bold=False, align_center=True):
         p.alignment = WD_ALIGN_PARAGRAPH.CENTER
     r = p.add_run(text)
     set_run_font(r, "Times New Roman", font_size, bold=bold)
+
+
+def make_table_unbreakable(table):
+    """Ensure table rows do not split across pages and paragraphs stay with next."""
+    for row in table.rows:
+        trPr = row._tr.get_or_add_trPr()
+        if not trPr.xpath("./w:cantSplit"):
+            trPr.append(parse_xml(f"<w:cantSplit {nsdecls('w')}/>"))
+        for cell in row.cells:
+            for p in cell.paragraphs:
+                p.paragraph_format.keep_with_next = True
+                p.paragraph_format.space_before = Pt(1.0)
+                p.paragraph_format.space_after = Pt(1.5)
 
 
 def patch_og_paper():
@@ -152,24 +168,22 @@ def patch_og_paper():
     )
     update_paragraph(doc.paragraphs[8], p8_text)
 
-    # P21: Synthetic Dataset Construction P1
+    # P21: Synthetic Dataset Construction P1 (Crisp & dense)
     p21_text = (
-        "The synthetic data generator produces 1,000 total instances, balanced initially between 500 benign flow records "
-        "and 500 covert-channel-labelled records (Table I), using a fixed random seed (42) for full reproducibility."
+        "The synthetic generator produces 1,000 total instances, balanced initially between 500 benign flow records "
+        "and 500 covert-channel-labelled records (Table I), using seed 42 for reproducibility."
     )
     update_paragraph(doc.paragraphs[21], p21_text)
 
-    # P22: Synthetic Dataset Construction P2
+    # P22: Synthetic Dataset Construction P2 (Crisp & dense to save vertical space)
     p22_text = (
-        "Covert-channel records are drawn from explicit parametric normal distributions N(mu, sigma^2) followed by physical "
-        "boundary clipping to emulate DNS tunneling, ICMP timing channels, and HTTP header manipulation: higher and more "
-        "variable DNS subdomain entropy, larger chi-square deviation from expected ICMP inter-packet timing, elevated HTTP "
-        "header anomaly scores, and greater protocol structural deviation, combined with smaller and more uniform packet "
-        "sizes and tighter inter-arrival timing consistent with automated tunnel traffic. Benign records are drawn from "
-        "distributions with low entropy, near-zero chi-square deviation, minimal header/protocol anomaly, and human-driven "
-        "flow statistics. To avoid unrealistically perfect class separability, 4% Gaussian measurement jitter is added to every "
-        "feature and exactly 4% of labels are randomly flipped prior to data splitting (flipping 22 benign labels to covert and "
-        "18 covert labels to benign, producing 496 benign and 504 covert noisy instances), ensuring realistic feature-space overlap."
+        "Covert-channel records emulate DNS tunneling, ICMP timing channels, and HTTP header steganography via parametric "
+        "normal distributions N(mu, sigma^2) with physical boundary clipping: higher DNS subdomain entropy, larger chi-square "
+        "delay deviation, elevated HTTP header anomaly scores, and structural deviation, combined with tighter packet sizes "
+        "and inter-arrival times. Benign records reflect low entropy, near-zero timing chi-square, minimal header anomaly, "
+        "and human-driven flow dynamics. To avoid artificial separability, 4% Gaussian measurement jitter is injected into "
+        "all features, and exactly 4% of labels (40 of 1,000) are randomly inverted prior to splitting (yielding 496 benign "
+        "and 504 covert instances)."
     )
     update_paragraph(doc.paragraphs[22], p22_text)
 
@@ -185,45 +199,84 @@ def patch_og_paper():
     set_cell(t1.rows[3].cells[1], "1000", bold=True, align_center=True)
     set_cell(t1.rows[3].cells[2], "100.0%", bold=True, align_center=True)
 
-    # P26: FlowSight Features
+    # P26: FlowSight Features (Dense)
     p26_text = (
-        "FlowSight features (4): flow_avg_pkt_size_log, flow_pkt_size_variance, flow_iat_mean_ms, flow_burst_ratio — "
-        "derived purely from packet metadata and directional 5-tuple flow keys (src_ip, dst_ip, src_port, dst_port, protocol) "
-        "over 30-second sliding windows with a burst threshold of tau_burst = 20.0 ms, preserving visibility on fully encrypted sessions."
+        "FlowSight features (4): flow_avg_pkt_size_log, flow_pkt_size_variance, flow_iat_mean_ms, and flow_burst_ratio — "
+        "computed from directional 5-tuple flow keys over 30s sliding windows with tau_burst = 20.0 ms, preserving passive "
+        "visibility on encrypted sessions."
     )
     update_paragraph(doc.paragraphs[26], p26_text)
 
-    # P27: CoverTrace Features
+    # P27: CoverTrace Features (Dense)
     p27_text = (
-        "CoverTrace features (4): dns_subdomain_entropy (Shannon entropy with a length threshold >= 12 chars to eliminate "
-        "small-sample variance), icmp_timing_chi2 (5-bin delay chi-square goodness-of-fit requiring sample size N >= 20 pings), "
-        "http_header_anomaly_score (evaluating missing standard browser headers and covert tunneling prefixes), and "
-        "protocol_struct_deviation (payload-to-packet length ratio and flag anomalies) — the information-theoretic indicators "
-        "specified in the Operation Cactus brief."
+        "CoverTrace features (4): dns_subdomain_entropy (Shannon entropy with length threshold >= 12 chars), "
+        "icmp_timing_chi2 (5-bin delay chi-square test requiring N >= 20 pings), http_header_anomaly_score (missing "
+        "standard headers and covert tunneling prefixes), and protocol_struct_deviation (framing and flag anomalies) — "
+        "the information-theoretic indicators specified in the Operation Cactus brief."
     )
     update_paragraph(doc.paragraphs[27], p27_text)
 
-    # P28: Data Partitioning
+    # P28: Data Partitioning (Dense)
     p28_text = (
-        "Data partitioning applies an 80:20 stratified split with random_state=42 on the noisy labels. The resulting held-out "
-        "partition contains exactly 200 records: because label noise is applied prior to splitting, the realized test-set composition "
-        "is exactly 99 benign-labelled and 101 covert-channel-labelled records rather than an exact 100/100 split. StandardScaler "
-        "is fitted strictly on the 800 training records and applied to both training and test features, preventing data leakage."
+        "Data partitioning applies an 80:20 stratified split with random_state=42 on noisy labels. The held-out test partition "
+        "comprises exactly 200 records: 99 benign-labelled and 101 covert-channel-labelled records. StandardScaler is fitted "
+        "strictly on the 800 training records and applied to both partitions, preventing data leakage."
     )
     update_paragraph(doc.paragraphs[28], p28_text)
 
-    # P36 & P37: Threat Model & Observability
+    # P35: Module Positioning (Dense)
+    p35_text = (
+        "The classifier sits at the fusion point of FlowSight and CoverTrace: FlowSight supplies always-on, encryption-resilient "
+        "flow telemetry, while CoverTrace contributes covert-channel indicators. In deployment, positive classifications trigger "
+        "MimicNet's adaptive honeypots. MimicNet's engagement engine is evaluated separately; this work focuses strictly on detection."
+    )
+    update_paragraph(doc.paragraphs[35], p35_text)
+
+    # P36 & P37: Threat Model & Observability (Dense)
     update_paragraph(
         doc.paragraphs[36], "E. Threat Model & Feature Observability", bold=True, italic=True
     )
     p37_text = (
-        "When traffic is encrypted under TLS 1.3, DoH, or DoT, deep packet inspection is blinded from an on-path passive tap. "
-        "Under transport encryption, CoverTrace's DNS subdomain entropy and HTTP header anomaly scores are unobservable and "
-        "assigned a neutral default value (0.0) with an active missing_mask. FlowSight's four flow statistics (packet lengths, "
-        "inter-arrival times, burst ratios) and ICMP timing remain fully observable across all monitoring points, providing an "
-        "always-on degraded-mode fallback when application fields are obscured."
+        "Under transport encryption (TLS 1.3, DoH, DoT), deep packet inspection is blinded on an on-path passive tap. "
+        "CoverTrace's DNS subdomain entropy and HTTP header anomaly scores are unobservable and assigned a neutral default "
+        "value (0.0) with an active missing_mask. FlowSight's four flow statistics and ICMP timing remain fully observable "
+        "across all monitoring points, providing an always-on degraded-mode fallback."
     )
     update_paragraph(doc.paragraphs[37], p37_text)
+
+    # P39: Reproducibility (Dense)
+    p39_text = (
+        "The pipeline is deterministic: the synthetic generator, label-noise injection, train/test split, and model fits "
+        "use a fixed random seed (42), ensuring full reproducibility of the records, splits, and metrics reported in Section VI."
+    )
+    update_paragraph(doc.paragraphs[39], p39_text)
+
+    # ========================================================
+    # G. Evaluation Metrics & Formulas: GUARANTEE ON SAME PAGE
+    # ========================================================
+    # P40: Heading G. Evaluation Metrics
+    p40 = doc.paragraphs[40]
+    p40.paragraph_format.keep_with_next = True
+    p40.paragraph_format.space_before = Pt(6.0)
+    p40.paragraph_format.space_after = Pt(2.0)
+
+    # P41: Let TP, TN, FP...
+    p41 = doc.paragraphs[41]
+    p41.paragraph_format.keep_with_next = True
+    p41.paragraph_format.space_before = Pt(0)
+    p41.paragraph_format.space_after = Pt(2.0)
+
+    # Make Table 2, Table 3, Table 4, Table 5 completely unbreakable & keep with next!
+    make_table_unbreakable(doc.tables[2])  # Accuracy
+    make_table_unbreakable(doc.tables[3])  # Precision & Recall
+    make_table_unbreakable(doc.tables[4])  # Specificity
+    make_table_unbreakable(doc.tables[5])  # F1
+
+    # P42: Precision, recall, and F1-score are reported...
+    p42 = doc.paragraphs[42]
+    p42.paragraph_format.keep_with_next = True
+    p42.paragraph_format.space_before = Pt(2.0)
+    p42.paragraph_format.space_after = Pt(4.0)
 
     # Table 6: Implementation Configuration (Table II)
     t6 = doc.tables[6]
@@ -249,8 +302,6 @@ def patch_og_paper():
 
     # Table 7: Performance Comparison (Table III)
     t7 = doc.tables[7]
-    # Header: Model, Accuracy, Precision, Recall, F1, Specificity, AUC
-    # Row 1: Logistic Regression
     set_cell(t7.rows[1].cells[0], "Logistic Regression", align_center=False)
     set_cell(t7.rows[1].cells[1], "95.00%", align_center=True)
     set_cell(t7.rows[1].cells[2], "95.05%", align_center=True)
@@ -259,7 +310,6 @@ def patch_og_paper():
     set_cell(t7.rows[1].cells[5], "94.95%", align_center=True)
     set_cell(t7.rows[1].cells[6], "0.9520", align_center=True)
 
-    # Row 2: SVM
     set_cell(t7.rows[2].cells[0], "SVM (RBF)", align_center=False)
     set_cell(t7.rows[2].cells[1], "95.00%", align_center=True)
     set_cell(t7.rows[2].cells[2], "95.05%", align_center=True)
@@ -268,7 +318,6 @@ def patch_og_paper():
     set_cell(t7.rows[2].cells[5], "94.95%", align_center=True)
     set_cell(t7.rows[2].cells[6], "0.9364", align_center=True)
 
-    # Row 3: XGBoost
     set_cell(t7.rows[3].cells[0], "XGBoost", align_center=False)
     set_cell(t7.rows[3].cells[1], "94.50%", align_center=True)
     set_cell(t7.rows[3].cells[2], "95.00%", align_center=True)
@@ -374,34 +423,37 @@ def patch_og_paper():
     update_paragraph(doc.paragraphs[75], p75_text)
 
     # 4. Spacing Polish across all body paragraphs:
-    # Set uniform 5 pt space_after, line_spacing 1.1, justified alignment
     for i, p in enumerate(doc.paragraphs):
         if not p.text.strip():
             continue
         # Don't touch title or subtitle
         if i in [0, 1]:
             continue
-        # If it's a heading 1:
+        # Heading 1:
         if i in [6, 10, 15, 18, 44, 47, 73, 76]:
-            p.paragraph_format.space_before = Pt(9.0)
-            p.paragraph_format.space_after = Pt(4.0)
-        # If it's a heading 2:
-        elif i in [20, 24, 29, 34, 36, 38, 40, 52, 57, 60, 64, 67, 70]:
-            p.paragraph_format.space_before = Pt(7.0)
+            p.paragraph_format.space_before = Pt(8.0)
             p.paragraph_format.space_after = Pt(3.0)
-        # If it's a table caption:
-        elif i in [23, 43, 51, 62]:
+        # Heading 2:
+        elif i in [20, 24, 29, 34, 36, 38, 40, 52, 57, 60, 64, 67, 70]:
             p.paragraph_format.space_before = Pt(6.0)
             p.paragraph_format.space_after = Pt(2.5)
-        # If it's a figure caption:
+        # Table caption:
+        elif i in [23, 43, 51, 62]:
+            p.paragraph_format.space_before = Pt(5.0)
+            p.paragraph_format.space_after = Pt(2.0)
+        # Figure caption:
         elif i in [54]:
-            p.paragraph_format.space_before = Pt(3.0)
-            p.paragraph_format.space_after = Pt(6.0)
+            p.paragraph_format.space_before = Pt(2.5)
+            p.paragraph_format.space_after = Pt(5.0)
+        # Formula surrounding paragraphs:
+        elif i in [40, 41, 42]:
+            p.paragraph_format.space_before = Pt(1.0)
+            p.paragraph_format.space_after = Pt(2.0)
         # Body text / references:
         else:
             p.paragraph_format.space_before = Pt(0)
-            p.paragraph_format.space_after = Pt(5.0)
-            p.paragraph_format.line_spacing = 1.1
+            p.paragraph_format.space_after = Pt(4.5)
+            p.paragraph_format.line_spacing = 1.08
 
     # Save to destination
     doc.save(str(OUT_DOCX_PATH))
@@ -419,7 +471,7 @@ def patch_og_paper():
             shutil.copyfile(str(OUT_DOCX_PATH), str(dst))
             print(f"Successfully copied to Desktop: {dst}")
         except PermissionError:
-            print(f"Note: {dst} is currently locked by Word. Created alternative copy instead.")
+            print(f"Note: {dst} is currently locked by Word.")
 
 
 if __name__ == "__main__":
