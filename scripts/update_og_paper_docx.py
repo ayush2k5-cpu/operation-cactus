@@ -1,10 +1,13 @@
 """Update the original Operation_Cactus_Paper_Final(2).docx directly in-place.
 
-Preserves the exact original formatting, fonts, styles, tables, formula blocks,
-margins, headers/footers, and section structure of the OG docx, while updating
-all data, numbers, tables, figures, and reviewer comments, and eliminating any
-spacing flaws. Specifically guarantees all Evaluation Metric formulas (Accuracy,
-Precision, Recall, Specificity, F1) remain tightly bound on the same page.
+Applies the blader/humanizer principles:
+- Eliminates AI writing patterns (no em dashes, no 'not-X-but-Y' false contrasts,
+  no stock AI buzzwords like 'delve', 'crucial', 'testament', 'showcase', 'underscore').
+- Varies sentence structures and rhythm naturally.
+- Preserves 100% of the verified benchmark facts, numbers, and parameters.
+- Preserves the exact original document formatting, fonts, styles, tables, formula
+  blocks, margins, and section architecture.
+- Keeps all evaluation metric formulas tightly bound on the same page.
 """
 
 from __future__ import annotations
@@ -118,33 +121,29 @@ def patch_og_paper():
         sp.paragraph_format.space_after = Pt(0)
         sp.paragraph_format.line_spacing = Pt(1)
 
-    # 3. Update Paragraph Texts with clean revised text and exact numbers
+    # 3. Update Paragraph Texts with humanized prose, zero em dashes, and exact numbers
 
-    # P4: Abstract
+    # P4: Abstract (Humanized: direct, active, no em dashes, no stock AI words)
     abstract_text = (
-        "This paper presents an implemented detection baseline for Operation Cactus, a two-module network threat "
-        "detection framework combining flow-level behavioral traffic analysis (FlowSight) with information-theoretic "
-        "covert channel detection (CoverTrace). Because deep packet inspection (DPI) fails against encrypted transport "
-        "protocols and standard intrusion detection systems do not reliably surface low-throughput covert exfiltration "
-        "channels, this work evaluates whether an eight-dimensional fused representation—four passive flow-level statistics "
-        "and four application/structural covert-channel indicators (Shannon entropy of DNS subdomains, an ICMP chi-square "
-        "timing statistic, an HTTP header anomaly score, and a protocol structural-deviation score)—can separate benign "
-        "network traffic from covert-channel flows. Three classification algorithms—XGBoost (Extreme Gradient Boosting), "
-        "Support Vector Machines (SVM) with an RBF kernel, and L2-regularized Logistic Regression (LR)—are evaluated on a "
-        "controlled, synthetic dataset of 1,000 instances. The dataset is generated with 500 benign and 500 covert-channel "
-        "instances before being subjected to 4% Gaussian measurement jitter per feature and 4% random label flips (resulting "
-        "in 496 benign and 504 covert instances). Under an 80:20 stratified split, the held-out test partition comprises "
-        "exactly 200 instances (99 benign and 101 covert). On this partition, Logistic Regression achieves 95.00% accuracy "
-        "(190/200), 95.05% recall, 0.9520 ROC-AUC, and 0.9554 PR-AUC; SVM achieves 95.00% accuracy, 95.05% recall, and "
-        "0.9364 ROC-AUC; and XGBoost achieves 94.50% accuracy, 94.06% recall, and 0.9377 ROC-AUC. An ablation study reveals "
-        "that a simple single-feature entropy threshold achieves 92.00% accuracy, FlowSight-only features achieve 94.50% "
-        "accuracy (0.9449 ROC-AUC), CoverTrace-only features achieve 95.00% accuracy (0.9517 ROC-AUC), and the fused "
-        "representation delivers the highest overall discrimination (0.9520 ROC-AUC). Permutation feature importance "
-        "establishes that CoverTrace indicators account for 79.4% of decision importance while FlowSight flow statistics "
-        "account for 20.6%. Across a 10-seed repeated evaluation, Logistic Regression achieves a mean accuracy of "
-        "0.9625 ± 0.0053 and a true positive rate of 0.9403 ± 0.0445 at a 5% false-positive rate. This study establishes "
-        "an implemented detection-layer baseline; live packet capture, honeypot emulation (MimicNet), and empirical "
-        "evaluation on lab-captured tunneling tools are addressed in subsequent project phases."
+        "Operation Cactus pairs passive flow-level traffic statistics (FlowSight) with protocol-level covert "
+        "channel indicators (CoverTrace) to detect hidden exfiltration in networks where payload inspection is "
+        "blocked by transport encryption. We evaluate whether an eight-dimensional feature vector (four flow metrics: "
+        "packet size log-mean, variance, inter-arrival time, burst ratio; and four covert indicators: DNS subdomain "
+        "entropy, ICMP inter-packet timing chi-square, HTTP header anomaly score, protocol structural deviation) "
+        "separates covert channels from benign flows. We train and test three classifiers (XGBoost, an RBF-kernel "
+        "Support Vector Machine, and L2-regularized Logistic Regression) on 1,000 synthetic flow records generated "
+        "from parametric distributions with 4% feature measurement jitter and 4% random label noise (40 inverted "
+        "labels, yielding 496 benign and 504 covert records). On a stratified 200-record test set (99 benign, 101 "
+        "covert), Logistic Regression correctly classifies 190 of 200 records (95.00% accuracy, 95.05% recall, "
+        "0.9520 ROC-AUC, 0.9554 PR-AUC). The SVM matches this accuracy at 95.00% (0.9364 ROC-AUC), while XGBoost "
+        "reaches 94.50% accuracy (189/200, 94.06% recall, 0.9377 ROC-AUC). Feature ablation shows that a baseline "
+        "single-feature entropy threshold (H >= 3.5) scores 92.00% accuracy; FlowSight flow statistics alone reach "
+        "94.50% accuracy (0.9449 ROC-AUC); CoverTrace indicators alone reach 95.00% accuracy (0.9517 ROC-AUC); and "
+        "combining both yields the highest ranking score (0.9520 ROC-AUC). Permutation importance tests assign 79.4% "
+        "of normalized decision weight to CoverTrace indicators and 20.6% to FlowSight statistics. Over 10 random "
+        "seeds (seeds 42 to 51), Logistic Regression averages 0.9625 ± 0.0053 accuracy, with a true positive rate "
+        "of 0.9403 ± 0.0445 at a 5% false positive rate. These results establish an implemented baseline for the "
+        "detection pipeline; evaluations against live packet capture and honeypot diversion (MimicNet) follow in Phase II."
     )
     update_paragraph(doc.paragraphs[4], abstract_text, prefix_both="Abstract—")
 
@@ -155,35 +154,113 @@ def patch_og_paper():
     )
     update_paragraph(doc.paragraphs[5], index_terms_text, prefix_both="Index Terms—", italic=True)
 
-    # P8: Introduction - FlowSight + CoverTrace
+    # P7: Introduction P1 (Humanized)
+    p7_text = (
+        "Transport-layer encryption (TLS 1.3, QUIC, DNS-over-HTTPS) hides packet payloads across modern enterprise networks. "
+        "This protects user privacy, but it also blinds perimeter security tools that rely on deep packet inspection. Attackers "
+        "take advantage of this gap by tunneling command-and-control messages or stolen data through standard protocols like "
+        "DNS query names, ICMP ping sequences, or custom HTTP headers. These low-bandwidth channels often pass through "
+        "firewalls and signature-based intrusion detection systems unnoticed."
+    )
+    update_paragraph(doc.paragraphs[7], p7_text)
+
+    # P8: Introduction P2 (Humanized)
     p8_text = (
-        "Operation Cactus tries to close that gap with two modules that work together. The first, FlowSight, captures raw "
-        "metadata through a C and libpcap engine and pulls out statistical flow features — packet size distribution, "
-        "inter-arrival timing, burst ratios — never touching the actual payload, which is exactly why it keeps working once "
-        "everything is encrypted. CoverTrace applies information-theoretic analysis — Shannon entropy scoring of DNS query "
-        "structure, chi-square timing tests for ICMP-based channels, and protocol structure validation for HTTP header anomalies "
-        "— to surface covert exfiltration channels that flow statistics alone would miss. This paper evaluates whether a "
-        "classifier trained jointly on FlowSight and CoverTrace features can reliably separate covert-channel traffic from benign "
-        "traffic, and reports which of the two feature families contributes more discriminative signal."
+        "Operation Cactus tackles this problem with two cooperating modules. FlowSight monitors traffic metadata (packet sizes, "
+        "timing intervals, and burst cadences) without decrypting payloads, keeping visibility intact even on encrypted streams. "
+        "CoverTrace calculates information-theoretic and format metrics: Shannon entropy on DNS subdomains, chi-square "
+        "goodness-of-fit tests on ICMP delays, and structural checks for non-standard HTTP headers. Here, we benchmark whether "
+        "training linear and non-linear classifiers on both feature sets produces reliable separation on a controlled dataset, "
+        "and we measure the relative weight contributed by each module."
     )
     update_paragraph(doc.paragraphs[8], p8_text)
 
-    # P21: Synthetic Dataset Construction P1 (Crisp & dense)
+    # P9: Introduction P3 (Humanized)
+    p9_text = (
+        "A third module, MimicNet, provides an adaptive honeypot deception layer. Because MimicNet handles dynamic service "
+        "emulation rather than passive flow detection, it is evaluated separately in a companion report. The work here focuses "
+        "strictly on the detection pipeline."
+    )
+    update_paragraph(doc.paragraphs[9], p9_text)
+
+    # P11: Related Work P1 (Humanized)
+    p11_text = (
+        "Flow-based classification has become standard as payload encryption spreads. Roy, Shapira, and Shavitt demonstrated "
+        "that packet lengths and inter-arrival intervals alone provide enough signal to categorize encrypted application flows "
+        "with low latency [8]. Their findings support FlowSight's design choice to track flow statistics without inspecting "
+        "payload bytes."
+    )
+    update_paragraph(doc.paragraphs[11], p11_text)
+
+    # P12: Related Work P2 (Humanized)
+    p12_text = (
+        "Research on covert timing channels goes back over two decades. Cabuk, Brodley, and Shields established the initial "
+        "foundations for IP timing channel detection using inter-packet delay variance [2]. Gianvecchio and Wang expanded on "
+        "this by applying entropy and conditional entropy metrics to identify subtle timing variations [3], a technique "
+        "CoverTrace adapts for ICMP traffic. More recently, SnapCatch used delay distribution matrices with machine learning "
+        "models to automate timing anomaly detection [4]."
+    )
+    update_paragraph(doc.paragraphs[12], p12_text)
+
+    # P13: Related Work P3 (Humanized)
+    p13_text = (
+        "DNS tunneling detection follows a similar path. Chowdhary, Bhowmik, and Rudra paired recursive cache dynamics with "
+        "query lexical features to flag tunnels [5]. Khodjaeva showed that tracking character entropy in network flows "
+        "significantly improves random forest detection of DNS-over-HTTPS tunnels [6]. In HTTP covert channels, Graniszewski et al. "
+        "analyzed steganographic data hiding in HTTP headers (SOMSteg) [7], which motivates CoverTrace's header anomaly index."
+    )
+    update_paragraph(doc.paragraphs[13], p13_text)
+
+    # P14: Related Work P4 (Humanized)
+    p14_text = (
+        "Throughout this literature, statistical and information-theoretic tests (query entropy, delay distributions, header "
+        "validation) consistently identify covert channels, while general flow statistics provide the foundation for encrypted "
+        "traffic classification. This paper evaluates an integrated baseline that tests both feature groups under a single "
+        "reproducible benchmark."
+    )
+    update_paragraph(doc.paragraphs[14], p14_text)
+
+    # P16: Problem Statement P1 (Humanized)
+    p16_text = (
+        "A practical covert channel detector must balance two competing operational demands: catching slow exfiltration without "
+        "generating excessive false alarms. In real enterprise environments, covert channels represent a tiny fraction of total "
+        "network volume. False negatives let attacker traffic through, while false positives waste analyst time on benign connections."
+    )
+    update_paragraph(doc.paragraphs[16], p16_text)
+
+    # P17: Problem Statement P2 (Humanized)
+    p17_text = (
+        "This study evaluates a concrete question: can a standardized model trained on FlowSight's flow statistics and CoverTrace's "
+        "covert indicators separate covert channels from benign flows under controlled noise, and how much discriminative signal "
+        "does each feature set provide? We run Logistic Regression, an RBF-kernel SVM, and XGBoost on identical feature matrices "
+        "and test partitions. Because missed exfiltration is costly in security operations, covert-class recall serves as the primary "
+        "evaluation metric."
+    )
+    update_paragraph(doc.paragraphs[17], p17_text)
+
+    # P19: Methodology Opening (Humanized)
+    p19_text = (
+        "The experimental setup includes synthetic data generation, feature extraction, stratified partitioning, standard scaling, "
+        "model training, held-out evaluation, and metric calculation. All three classifiers run against identical feature matrices "
+        "and evaluation splits."
+    )
+    update_paragraph(doc.paragraphs[19], p19_text)
+
+    # P21: Synthetic Dataset Construction P1 (Humanized)
     p21_text = (
-        "The synthetic generator produces 1,000 total instances, balanced initially between 500 benign flow records "
-        "and 500 covert-channel-labelled records (Table I), using seed 42 for reproducibility."
+        "We generate 1,000 synthetic flow instances using parametric distributions in eval/paper_baseline.py (fixed random seed 42). "
+        "The dataset begins with 500 benign instances and 500 covert instances before noise injection (Table I)."
     )
     update_paragraph(doc.paragraphs[21], p21_text)
 
-    # P22: Synthetic Dataset Construction P2 (Crisp & dense to save vertical space)
+    # P22: Synthetic Dataset Construction P2 (Humanized, compact, no em dashes)
     p22_text = (
-        "Covert-channel records emulate DNS tunneling, ICMP timing channels, and HTTP header steganography via parametric "
-        "normal distributions N(mu, sigma^2) with physical boundary clipping: higher DNS subdomain entropy, larger chi-square "
-        "delay deviation, elevated HTTP header anomaly scores, and structural deviation, combined with tighter packet sizes "
-        "and inter-arrival times. Benign records reflect low entropy, near-zero timing chi-square, minimal header anomaly, "
-        "and human-driven flow dynamics. To avoid artificial separability, 4% Gaussian measurement jitter is injected into "
-        "all features, and exactly 4% of labels (40 of 1,000) are randomly inverted prior to splitting (yielding 496 benign "
-        "and 504 covert instances)."
+        "Covert records emulate DNS tunneling, ICMP timing channels, and HTTP header steganography: elevated DNS subdomain entropy, "
+        "larger chi-square delay deviation, higher HTTP header anomaly scores, and protocol structural deviations, combined with "
+        "smaller packet sizes and tighter inter-arrival timing. Benign instances reflect lower entropy, near-zero timing chi-square, "
+        "clean headers, and human-driven packet timing. To reflect real-world sensor imperfection, we inject 4% Gaussian measurement "
+        "jitter into every feature and randomly invert exactly 4% of labels (40 instances: 22 benign flipped to covert, 18 covert "
+        "flipped to benign). This leaves 496 benign records and 504 covert records."
     )
     update_paragraph(doc.paragraphs[22], p22_text)
 
@@ -199,72 +276,108 @@ def patch_og_paper():
     set_cell(t1.rows[3].cells[1], "1000", bold=True, align_center=True)
     set_cell(t1.rows[3].cells[2], "100.0%", bold=True, align_center=True)
 
-    # P26: FlowSight Features (Dense)
+    # P25: Feature Construction Intro (Humanized)
+    p25_text = "Each record contains eight features split across the two detection modules:"
+    update_paragraph(doc.paragraphs[25], p25_text)
+
+    # P26: FlowSight Features (Humanized, compact)
     p26_text = (
-        "FlowSight features (4): flow_avg_pkt_size_log, flow_pkt_size_variance, flow_iat_mean_ms, and flow_burst_ratio — "
-        "computed from directional 5-tuple flow keys over 30s sliding windows with tau_burst = 20.0 ms, preserving passive "
-        "visibility on encrypted sessions."
+        "FlowSight features (4): flow_avg_pkt_size_log (natural log of mean packet size), flow_pkt_size_variance, flow_iat_mean_ms "
+        "(mean inter-arrival time in milliseconds), and flow_burst_ratio (share of packet gaps under 20.0 ms). These derive from "
+        "directional 5-tuple keys (src_ip, dst_ip, src_port, dst_port, protocol) over 30-second windows."
     )
     update_paragraph(doc.paragraphs[26], p26_text)
 
-    # P27: CoverTrace Features (Dense)
+    # P27: CoverTrace Features (Humanized, compact)
     p27_text = (
-        "CoverTrace features (4): dns_subdomain_entropy (Shannon entropy with length threshold >= 12 chars), "
-        "icmp_timing_chi2 (5-bin delay chi-square test requiring N >= 20 pings), http_header_anomaly_score (missing "
-        "standard headers and covert tunneling prefixes), and protocol_struct_deviation (framing and flag anomalies) — "
-        "the information-theoretic indicators specified in the Operation Cactus brief."
+        "CoverTrace features (4): dns_subdomain_entropy (Shannon entropy on query subdomains, returning 0.0 for labels shorter than "
+        "12 characters), icmp_timing_chi2 (5-bin delay chi-square test against 1.0s ping cadences, requiring N >= 20 pings), "
+        "http_header_anomaly_score (checking for missing standard headers and tunneling prefixes), and protocol_struct_deviation "
+        "(packet size framing and flag anomalies)."
     )
     update_paragraph(doc.paragraphs[27], p27_text)
 
-    # P28: Data Partitioning (Dense)
+    # P28: Data Partitioning (Humanized, compact)
     p28_text = (
-        "Data partitioning applies an 80:20 stratified split with random_state=42 on noisy labels. The held-out test partition "
-        "comprises exactly 200 records: 99 benign-labelled and 101 covert-channel-labelled records. StandardScaler is fitted "
-        "strictly on the 800 training records and applied to both partitions, preventing data leakage."
+        "We split the noisy dataset into an 80% training set (800 records) and a 20% held-out test set (200 records) using "
+        "stratified sampling on noisy labels (random_state=42). The resulting test set contains exactly 99 benign-labelled records "
+        "and 101 covert-labelled records. StandardScaler is fitted only on the 800 training records and applied to both splits, "
+        "preventing data leakage."
     )
     update_paragraph(doc.paragraphs[28], p28_text)
 
-    # P35: Module Positioning (Dense)
+    # P30: XGBoost (Humanized)
+    p30_text = (
+        "XGBoost (Extreme Gradient Boosting): 200 estimators, maximum depth 5, learning rate 0.1, subsample ratio 0.9, column "
+        "subsample ratio 0.9, and random state 42, following the gradient-boosted tree design of Chen and Guestrin [9]."
+    )
+    update_paragraph(doc.paragraphs[30], p30_text)
+
+    # P31: SVM (Humanized)
+    p31_text = (
+        "Support Vector Machine (SVM): an RBF-kernel SVC with C = 10, gamma set to scikit-learn's scale heuristic, Platt probability "
+        "scaling enabled for ROC analysis, and random state 42."
+    )
+    update_paragraph(doc.paragraphs[31], p31_text)
+
+    # P32: Logistic Regression (Humanized)
+    p32_text = (
+        "Logistic Regression (LR): an L2-regularized logistic regression classifier with a maximum of 1,000 solver iterations and "
+        "random state 42, providing an interpretable linear baseline against the non-linear models."
+    )
+    update_paragraph(doc.paragraphs[32], p32_text)
+
+    # P33: Defaults statement (Humanized)
+    p33_text = (
+        "All three setups follow standard defaults for tabular binary classification benchmarks. We avoided hyperparameter "
+        "tuning so the comparison reflects the raw implementations."
+    )
+    update_paragraph(doc.paragraphs[33], p33_text)
+
+    # P35: Module Positioning (Humanized, compact)
     p35_text = (
-        "The classifier sits at the fusion point of FlowSight and CoverTrace: FlowSight supplies always-on, encryption-resilient "
-        "flow telemetry, while CoverTrace contributes covert-channel indicators. In deployment, positive classifications trigger "
-        "MimicNet's adaptive honeypots. MimicNet's engagement engine is evaluated separately; this work focuses strictly on detection."
+        "The classifier sits at the fusion point of FlowSight and CoverTrace: FlowSight supplies always-on, encryption-resilient flow "
+        "telemetry, while CoverTrace contributes covert-channel indicators. In deployment, positive classifications trigger MimicNet's "
+        "adaptive honeypots. MimicNet's engagement engine is evaluated separately; this work focuses strictly on detection."
     )
     update_paragraph(doc.paragraphs[35], p35_text)
 
-    # P36 & P37: Threat Model & Observability (Dense)
+    # P36 & P37: Threat Model & Observability (Humanized, compact)
     update_paragraph(
         doc.paragraphs[36], "E. Threat Model & Feature Observability", bold=True, italic=True
     )
     p37_text = (
-        "Under transport encryption (TLS 1.3, DoH, DoT), deep packet inspection is blinded on an on-path passive tap. "
-        "CoverTrace's DNS subdomain entropy and HTTP header anomaly scores are unobservable and assigned a neutral default "
-        "value (0.0) with an active missing_mask. FlowSight's four flow statistics and ICMP timing remain fully observable "
-        "across all monitoring points, providing an always-on degraded-mode fallback."
+        "On an un-intercepted network tap, transport encryption (TLS 1.3, DoH, DoT) hides application payloads. Under encryption, "
+        "CoverTrace's DNS entropy and HTTP header anomaly features cannot be computed and default to 0.0 with a boolean missing_mask. "
+        "FlowSight's four flow statistics and ICMP timing remain fully visible across all collection points, providing a dependable "
+        "degraded-mode fallback."
     )
     update_paragraph(doc.paragraphs[37], p37_text)
 
-    # P39: Reproducibility (Dense)
+    # P39: Reproducibility (Humanized, compact)
     p39_text = (
-        "The pipeline is deterministic: the synthetic generator, label-noise injection, train/test split, and model fits "
-        "use a fixed random seed (42), ensuring full reproducibility of the records, splits, and metrics reported in Section VI."
+        "The generation script, noise injection, dataset split, and model fits run under random seed 42. Anyone executing "
+        "eval/paper_baseline.py reproduces the exact dataset, splits, and metrics reported below."
     )
     update_paragraph(doc.paragraphs[39], p39_text)
 
     # ========================================================
     # G. Evaluation Metrics & Formulas: GUARANTEE ON SAME PAGE
     # ========================================================
-    # P40: Heading G. Evaluation Metrics
     p40 = doc.paragraphs[40]
     p40.paragraph_format.keep_with_next = True
     p40.paragraph_format.space_before = Pt(6.0)
     p40.paragraph_format.space_after = Pt(2.0)
 
-    # P41: Let TP, TN, FP...
     p41 = doc.paragraphs[41]
     p41.paragraph_format.keep_with_next = True
     p41.paragraph_format.space_before = Pt(0)
     p41.paragraph_format.space_after = Pt(2.0)
+    p41_text = (
+        "Let TP, TN, FP, and FN denote true positives, true negatives, false positives, and false negatives for covert channel detection. "
+        "We compute standard classification metrics:"
+    )
+    update_paragraph(p41, p41_text)
 
     # Make Table 2, Table 3, Table 4, Table 5 completely unbreakable & keep with next!
     make_table_unbreakable(doc.tables[2])  # Accuracy
@@ -272,11 +385,16 @@ def patch_og_paper():
     make_table_unbreakable(doc.tables[4])  # Specificity
     make_table_unbreakable(doc.tables[5])  # F1
 
-    # P42: Precision, recall, and F1-score are reported...
+    # P42: Metrics text (Humanized, compact)
     p42 = doc.paragraphs[42]
     p42.paragraph_format.keep_with_next = True
     p42.paragraph_format.space_before = Pt(2.0)
     p42.paragraph_format.space_after = Pt(4.0)
+    p42_text = (
+        "Precision, recall, and F1-score evaluate covert-class performance. ROC-AUC and PR-AUC assess continuous probability "
+        "calibration across varying decision thresholds."
+    )
+    update_paragraph(p42, p42_text)
 
     # Table 6: Implementation Configuration (Table II)
     t6 = doc.tables[6]
@@ -293,7 +411,30 @@ def patch_og_paper():
         align_center=False,
     )
 
-    # P49: Results opening
+    # P45: Implementation P1 (Humanized)
+    p45_text = (
+        "The pipeline is implemented in Python, using scikit-learn for the SVM and Logistic Regression models and xgboost for the "
+        "tree ensemble. This shared code path ensures identical preprocessing, scaling, and evaluation across all three algorithms. "
+        "The benchmark script saves trained models, records evaluation metrics, and exports confusion matrices and ROC figures to disk."
+    )
+    update_paragraph(doc.paragraphs[45], p45_text)
+
+    # P46: Implementation P2 (Humanized)
+    p46_text = (
+        "This experimental setup evaluates the mathematical and statistical behavior of the detection models prior to system integration. "
+        "Wiring these trained classifiers into FlowSight's C and libpcap engine and CoverTrace's live scoring pipeline forms the primary "
+        "task for Phase II."
+    )
+    update_paragraph(doc.paragraphs[46], p46_text)
+
+    # P48: Results Opening (Humanized)
+    p48_text = (
+        "The three classifiers were evaluated on the 200-record held-out synthetic test set (99 benign, 101 covert). Table III "
+        "reports the resulting performance metrics."
+    )
+    update_paragraph(doc.paragraphs[48], p48_text)
+
+    # P49: Results Summary (Humanized)
     p49_text = (
         "Logistic Regression correctly classifies 190 of 200 test records (95.00% accuracy), SVM correctly classifies 190 "
         "(95.00%), and XGBoost correctly classifies 189 (94.50%)."
@@ -326,29 +467,35 @@ def patch_og_paper():
     set_cell(t7.rows[3].cells[5], "94.95%", align_center=True)
     set_cell(t7.rows[3].cells[6], "0.9377", align_center=True)
 
-    # P55: Confusion Matrix Analysis
+    # P55: Confusion Matrix Analysis (Humanized)
     p55_text = (
-        "The confusion matrices in Fig. 1 show that Logistic Regression produces 10 total errors out of 200 (94 true negatives, "
-        "96 true positives, 5 false positives, and 5 false negatives). The Support Vector Machine exhibits identical error counts "
-        "(94 TN, 96 TP, 5 FP, and 5 FN). XGBoost records 11 total errors (94 TN, 95 TP, 5 FP, and 6 FN)."
+        "At the default 0.50 threshold (Fig. 1), Logistic Regression produces 10 errors out of 200 test records: 94 true negatives, "
+        "96 true positives, 5 false positives, and 5 false negatives. The Support Vector Machine produces identical counts (94 TN, "
+        "96 TP, 5 FP, 5 FN). XGBoost produces 11 errors: 94 TN, 95 TP, 5 FP, and 6 FN."
     )
     update_paragraph(doc.paragraphs[55], p55_text)
 
-    # P58: ROC & AUC Analysis
+    # P56: Error Interpretation (Humanized)
+    p56_text = (
+        "These error counts highlight how the models behave at a fixed decision boundary: both Logistic Regression and SVM "
+        "achieve 95.05% recall with 5 false alarms on 99 benign flows."
+    )
+    update_paragraph(doc.paragraphs[56], p56_text)
+
+    # P58: ROC & AUC Analysis (Humanized, no em dashes)
     p58_text = (
-        "The ROC curves are presented together in Fig. 2, and overall metric comparisons in Fig. 3. Logistic Regression records "
-        "the largest AUC (0.9520) and PR-AUC (0.9554), reflecting superior probability calibration, ahead of XGBoost at 0.9377 and "
-        "SVM at 0.9364. All three classifiers demonstrate robust probability ranking under noise."
+        "Figures 2 and 3 plot discrimination across varying decision thresholds. Logistic Regression records the highest ROC-AUC "
+        "(0.9520) and PR-AUC (0.9554), demonstrating stable probability calibration across operating thresholds. XGBoost records "
+        "0.9377 ROC-AUC, and SVM records 0.9364 ROC-AUC."
     )
     update_paragraph(doc.paragraphs[58], p58_text)
 
-    # P61: Feature Contribution
+    # P61: Feature Contribution (Humanized)
     p61_text = (
-        "To characterize which of the two detection modules drives classification performance, tree gain importance was extracted "
-        "from XGBoost (Table IV) and model-agnostic permutation importance was evaluated on the held-out test partition. "
-        "CoverTrace indicators account for 88.9% of tree gain and 79.4% of held-out permutation decision weight, while FlowSight "
-        "accounts for 11.1% of tree gain and 20.6% of permutation weight. Protocol structural deviation (55.00%) and HTTP header "
-        "anomaly (28.84%) provide the strongest primary signals."
+        "To measure module contribution, we pulled tree gain importances from XGBoost (Table IV) and evaluated permutation "
+        "importance on the held-out test partition. CoverTrace indicators represent 88.9% of tree gain and 79.4% of normalized "
+        "permutation weight. FlowSight flow statistics contribute 11.1% of tree gain and 20.6% of permutation weight. Protocol "
+        "structural deviation (55.00%) and HTTP header anomaly (28.84%) supply the strongest individual signals."
     )
     update_paragraph(doc.paragraphs[61], p61_text)
 
@@ -370,55 +517,83 @@ def patch_og_paper():
         set_cell(row.cells[1], m_name, align_center=False)
         set_cell(row.cells[2], imp, align_center=True)
 
+    # P63: Feature Importance Explanation (Humanized)
+    p63_text = (
+        "These results confirm that information-theoretic indicators provide the primary discriminative signal for covert channel "
+        "detection, while FlowSight's flow metrics offer essential corroboration and maintain coverage when payload inspection is unavailable."
+    )
+    update_paragraph(doc.paragraphs[63], p63_text)
+
     # P64: Heading - Ablation Analysis & Feature Synergy
     update_paragraph(
         doc.paragraphs[64], "D. Ablation Analysis & Feature Synergy", bold=True, italic=True
     )
 
-    # P65: Ablation text
+    # P65: Ablation text (Humanized)
     p65_text = (
-        "An ablation study isolating individual module contributions demonstrates that a single-feature entropy threshold "
-        "(H >= 3.5) achieves 92.00% accuracy and 91.09% recall. FlowSight-only features achieve 94.50% accuracy (0.9449 AUC), "
-        "confirming that passive flow metadata remains an effective fallback under encryption. CoverTrace-only features achieve "
-        "95.00% accuracy (0.9517 AUC), while the fused representation delivers the highest overall discrimination (0.9520 AUC), "
-        "proving that metadata and covert indicators provide corroborating signals."
+        "Feature ablation confirms the value of fusing both modules. A simple threshold on DNS subdomain entropy (H >= 3.5) "
+        "achieves 92.00% accuracy and 91.09% recall. FlowSight flow features alone achieve 94.50% accuracy (0.9449 ROC-AUC), "
+        "proving that flow metadata remains effective when encryption obscures payloads. CoverTrace features alone reach "
+        "95.00% accuracy (0.9517 ROC-AUC). Combining both feature sets achieves 0.9520 ROC-AUC, outperforming any individual feature group."
     )
     update_paragraph(doc.paragraphs[65], p65_text)
 
-    # P66: Uncertainty Quantification text
+    # P66: Uncertainty Quantification text (Humanized)
     p66_text = (
-        "To evaluate stability beyond a single fixed seed, evaluation was repeated across 10 independent random seeds (seeds 42 "
-        "through 51). Logistic Regression achieves mean accuracy 0.9625 ± 0.0053, ROC-AUC 0.9652 ± 0.0059, and PR-AUC 0.9616 ± 0.0091. "
-        "At an operational 5% false-positive rate, LR achieves 0.9403 ± 0.0445 recall, confirming high sensitivity under realistic "
-        "triage constraints."
+        "Evaluating across 10 random seeds (seeds 42 to 51) confirms stability beyond the initial split. Logistic Regression "
+        "averages 0.9625 ± 0.0053 accuracy, 0.9652 ± 0.0059 ROC-AUC, and 0.9616 ± 0.0091 PR-AUC. In operational threshold tests, "
+        "Logistic Regression detects 46.20% of covert tunnels at a strict 1% false positive rate and 94.03% ± 0.0445 of tunnels "
+        "at a 5% false positive rate."
     )
     update_paragraph(doc.paragraphs[66], p66_text)
 
-    # P71: Interpretation P1
+    # P68: Threats to Validity P1 (Humanized)
+    p68_text = (
+        "Several limitations apply to these findings. The synthetic generator relies on simplified parametric distributions "
+        "rather than live packet captures. Sensor noise and label flips introduce realistic ambiguity, but real enterprise traffic "
+        "displays more complex, multi-modal distributions. Furthermore, these tests use an even 50:50 class balance, whereas "
+        "covert channels in production environments occur as rare anomalies."
+    )
+    update_paragraph(doc.paragraphs[68], p68_text)
+
+    # P69: Threats to Validity P2 (Humanized)
+    p69_text = (
+        "These constraints mean the benchmark validates pipeline mechanics and feature representation rather than real-world "
+        "adversarial evasion. Live traffic evaluation is required before making operational deployment claims."
+    )
+    update_paragraph(doc.paragraphs[69], p69_text)
+
+    # P71: Interpretation P1 (Humanized)
     p71_text = (
-        "The findings distinguish fixed-threshold performance from calibrated probability rankings. Logistic Regression and SVM "
-        "achieve 95.00% accuracy (10 errors out of 200), while XGBoost achieves 94.50% accuracy (11 errors). Logistic Regression "
-        "maintains the highest probability-ranking advantage across thresholds."
+        "In enterprise monitoring, fixed thresholds must balance sensitivity against triage workload. Operating at a 5% false "
+        "positive rate catches 94.03% of covert channels. Because Operation Cactus feeds detections into MimicNet's adaptive "
+        "honeypots rather than dropping traffic outright, occasional false alarms redirect benign users into monitored emulation "
+        "without terminating valid business sessions."
     )
     update_paragraph(doc.paragraphs[71], p71_text)
 
-    # P74: Conclusion P1
+    # P72: Interpretation P2 (Humanized)
+    p72_text = (
+        "The feature importance breakdown explains why both modules belong in the pipeline: CoverTrace carries the majority "
+        "of the discriminative signal, while FlowSight provides continuous, encryption-resilient telemetry that keeps working "
+        "even when application-layer fields are hidden."
+    )
+    update_paragraph(doc.paragraphs[72], p72_text)
+
+    # P74: Conclusion P1 (Humanized)
     p74_text = (
-        "This work evaluated XGBoost, a Support Vector Machine, and Logistic Regression on a common synthetic binary-classification "
-        "benchmark fusing Operation Cactus's FlowSight flow statistics with its CoverTrace covert-channel indicators. Logistic "
-        "Regression achieved 95.00% accuracy and 0.9520 ROC-AUC on the held-out synthetic test set, with 95.05% precision, 95.05% "
-        "recall, 95.05% F1-score, and 94.95% specificity. A feature-importance analysis showed that CoverTrace's information-theoretic "
-        "indicators account for 88.9% of tree gain and 79.4% of permutation decision weight versus 20.6% for FlowSight, confirming "
-        "that CoverTrace provides the primary discriminative signal while FlowSight contributes essential corroboration and encryption resilience."
+        "This study benchmarks an implemented detection baseline combining FlowSight flow telemetry with CoverTrace "
+        "information-theoretic indicators. On the held-out test set, Logistic Regression achieves 95.00% accuracy (190/200), "
+        "95.05% recall, and 0.9520 ROC-AUC. CoverTrace indicators supply roughly 79.4% of permutation decision weight, while "
+        "FlowSight statistics provide 20.6% corroborating weight and an always-on fallback under transport encryption."
     )
     update_paragraph(doc.paragraphs[74], p74_text)
 
-    # P75: Conclusion P2
+    # P75: Conclusion P2 (Humanized)
     p75_text = (
-        "The results confirm consistent operation of the preprocessing, scaling, training, prediction, and evaluation pipeline under "
-        "the specified benchmark conditions. The present implementation provides a detection-layer baseline for the broader Operation "
-        "Cactus platform. Planned Phase-II work integrates these classifiers into FlowSight's live libpcap capture path and evaluates "
-        "them against empirical tunnels generated with iodine and dnscat2 alongside containerized MimicNet deception honeypots."
+        "These results validate the detection pipeline architecture under controlled benchmark conditions. Phase II work will "
+        "evaluate the fused model against empirical PCAPs generated with iodine and dnscat2 in a testbed lab, and connect live "
+        "detections to MimicNet's containerized honeypots."
     )
     update_paragraph(doc.paragraphs[75], p75_text)
 
