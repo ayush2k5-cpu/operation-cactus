@@ -164,12 +164,12 @@ Evaluating across 10 random seeds (seeds 42 to 51) confirms stability beyond the
 - **Operational Operating Points:** Logistic Regression detects 46.20% of covert tunnels at a strict 1% false positive rate and 94.03% ± 0.0445 of tunnels at a 5% false positive rate.
 
 ### F. Threats to Validity
-Several limitations apply to these findings. The synthetic generator relies on simplified parametric distributions rather than live packet captures. Sensor noise and label flips introduce realistic ambiguity, but real enterprise traffic displays more complex, multi-modal distributions. Furthermore, these tests use an even 50:50 class balance, whereas covert channels in production environments occur as rare anomalies.
+Several limitations apply to these findings. The synthetic generator relies on simplified parametric distributions instead of live packet captures. Sensor noise and label flips introduce realistic ambiguity, but real enterprise traffic displays more complex, multi-modal distributions. In addition, these tests use an even 50:50 class balance, whereas covert channels in production environments occur as rare anomalies.
 
-These constraints mean the benchmark validates pipeline mechanics and feature representation rather than real-world adversarial evasion. Live traffic evaluation is required before making operational deployment claims.
+These constraints mean the benchmark validates pipeline mechanics and feature representation without claiming real-world adversarial evasion. Live traffic evaluation is required before making operational deployment claims.
 
 ### G. Interpretation and Operational Trade-offs
-In enterprise monitoring, fixed thresholds must balance sensitivity against triage workload. Operating at a 5% false positive rate catches 94.03% of covert channels. Because Operation Cactus feeds detections into MimicNet's adaptive honeypots rather than dropping traffic outright, occasional false alarms redirect benign users into monitored emulation without terminating valid business sessions.
+In enterprise monitoring, fixed thresholds must balance sensitivity against triage workload. Operating at a 5% false positive rate catches 94.03% of covert channels. Because Operation Cactus feeds detections into MimicNet's adaptive honeypots instead of dropping traffic outright, occasional false alarms redirect benign users into monitored emulation without terminating valid business sessions.
 
 ---
 
