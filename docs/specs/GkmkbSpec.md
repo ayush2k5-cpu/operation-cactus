@@ -87,7 +87,7 @@ Detail: `docs/specs/EvalSpec.md` (merged 2026-10-22, tickets #81 to #91).
 ## 8. Honesty ledger (update with every merged PR)
 Full evidence is in `docs/Ledger.md`; this table keeps the states in step with it.
 
-| Capability | State on 2026-10-30 |
+| Capability | State on 2026-11-28 |
 |---|---|
 | Replay capture | Working |
 | C + libpcap capture | Designed (stretch, ADR 0001) |
@@ -95,15 +95,15 @@ Full evidence is in `docs/Ledger.md`; this table keeps the states in step with i
 | CoverTrace | Partial: entry point, settings file and the DNS entropy checker; no other checkers yet |
 | Adaptive thresholds | Designed |
 | Correlation gate | Working (backend tests; the demo alert now rests on two real detectors) |
-| MimicNet honeypot, session recording | Partial: SSH-like shell and `engage` in one locked-down container, tested in CI; scripted attacker only; started from an Alert by the backend when `HONEYPOT_ENGAGE=1`, off by default |
-| MITRE mapping | Partial: keyword table and tagging function on session events, tested on the scripted attacker; all rows Unverified, not shown in the Console |
+| MimicNet honeypot, session recording | Partial: SSH-like shell and `engage` in one locked-down container, tested in CI; scripted attacker only; sessions carry MITRE tags and propose Rules |
+| MITRE mapping | Partial: verified keyword table, tags saved on sessions and shown in the Console; scripted attacker only |
 | Fingerprint evasion | Designed |
-| Rule generation, rule loading, closed-loop rules | Designed |
+| Rule generation, rule loading, closed-loop rules | Partial: built and tested on crafted data, not measured; unknown match keys and pre-activated Rules are open gaps |
 | Evaluation harness | Partial: labels, metric functions and a runner on crafted pcaps; synthetic data only |
-| Paper 1 baseline retrain, MITRE table verification, consent record | Designed |
-| Backend API, WebSocket, storage | Partial: replay API, live events, REST lists, sessions, in-memory store; Mongo store not tested against a real database |
+| Paper 1 baseline retrain, MITRE table verification, consent record | Table verification done and consent record Working; baseline retrain Designed |
+| Backend API, WebSocket, storage | Partial: replay API, live events, REST lists, sessions, Rules endpoints, in-memory store; Mongo store not tested against a real database |
 | Compose stack (Mongo and backend) | Partial: run by hand on one laptop, not on a clean machine |
-| Dashboard | Partial: replay start, live feed, Alerts, Detections, Replays, threshold compare, session view for an engaged Alert, styled; no Rules view, no MITRE tags |
+| Dashboard | Partial: replay start, live feed, Alerts, Detections, Replays, threshold compare, session view with MITRE tags, Rules view |
 
 ## 9. Cycles
 Final date not fixed; each cycle ends with something demonstrable.
