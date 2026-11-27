@@ -2,8 +2,9 @@
 
 **An Empirical Evaluation of the MimicNet Deception Architecture, Container Isolation Constraints, and MITRE ATT&CK Mapping**
 
-**Ayush Rathod, Sharukh Khan, Shivansh Tripathi, Bhargav Moray, Gerard Deepak, Shalini Ranjan**  
-*Department of Computer Science & Engineering (Cyber Security), Dayananda Sagar Academy of Technology and Management, Bengaluru, India*
+| **Ayush Rathod**<br>*Dept. of Computer Science & Engineering (Cyber Security)*<br>*Dayananda Sagar Academy of Technology and Management*<br>*Bengaluru* | **Sharukh Khan**<br>*Dept. of Computer Science & Engineering (Cyber Security)*<br>*Dayananda Sagar Academy of Technology and Management*<br>*Bengaluru* | **Shivansh Tripathi**<br>*Dept. of Computer Science & Engineering (Cyber Security)*<br>*Dayananda Sagar Academy of Technology and Management*<br>*Bengaluru* |
+|:---:|:---:|:---:|
+| **Bhargav Moray**<br>*Dept. of Computer Science & Engineering (Cyber Security)*<br>*Dayananda Sagar Academy of Technology and Management*<br>*Bengaluru* | **Gerard Deepak**<br>*Dept. of Computer Science & Engineering (Cyber Security)*<br>*Dayananda Sagar Academy of Technology and Management*<br>*Bengaluru* | **Shalini Ranjan**<br>*Dept. of Computer Science & Engineering (Cyber Security)*<br>*Dayananda Sagar Academy of Technology and Management*<br>*Bengaluru* |
 
 ---
 

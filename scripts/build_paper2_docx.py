@@ -234,7 +234,10 @@ def build_paper2_doc():
     # Subtitle
     add_p(
         doc,
-        text="An Empirical Evaluation of the MimicNet Deception Architecture, Container Isolation Constraints, and MITRE ATT&CK Mapping",
+        text=(
+            "An Empirical Evaluation of the MimicNet Deception Architecture, "
+            "Container Isolation Constraints, and MITRE ATT&CK Mapping"
+        ),
         align=WD_ALIGN_PARAGRAPH.CENTER,
         space_before_pt=0,
         space_after_pt=10,
@@ -243,29 +246,120 @@ def build_paper2_doc():
         keep_with_next=True,
     )
 
-    # Authors
-    add_p(
-        doc,
-        text="Ayush Rathod, Sharukh Khan, Shivansh Tripathi, Bhargav Moray, Gerard Deepak, Shalini Ranjan",
-        align=WD_ALIGN_PARAGRAPH.CENTER,
-        space_before_pt=0,
-        space_after_pt=3,
-        bold=True,
-        font_size_pt=10.0,
-        keep_with_next=True,
-    )
+    # Author Block: Exact IEEE 2x3 Table Matching Paper 1
+    authors_data = [
+        [
+            (
+                "Ayush Rathod",
+                "Dept. of Computer Science & Engineering (Cyber Security)",
+                "Dayananda Sagar Academy of Technology and Management",
+                "Bengaluru",
+            ),
+            (
+                "Sharukh Khan",
+                "Dept. of Computer Science & Engineering (Cyber Security)",
+                "Dayananda Sagar Academy of Technology and Management",
+                "Bengaluru",
+            ),
+            (
+                "Shivansh Tripathi",
+                "Dept. of Computer Science & Engineering (Cyber Security)",
+                "Dayananda Sagar Academy of Technology and Management",
+                "Bengaluru",
+            ),
+        ],
+        [
+            (
+                "Bhargav Moray",
+                "Dept. of Computer Science & Engineering (Cyber Security)",
+                "Dayananda Sagar Academy of Technology and Management",
+                "Bengaluru",
+            ),
+            (
+                "Gerard Deepak",
+                "Dept. of Computer Science & Engineering (Cyber Security)",
+                "Dayananda Sagar Academy of Technology and Management",
+                "Bengaluru",
+            ),
+            (
+                "Shalini Ranjan",
+                "Dept. of Computer Science & Engineering (Cyber Security)",
+                "Dayananda Sagar Academy of Technology and Management",
+                "Bengaluru",
+            ),
+        ],
+    ]
 
-    # Affiliation
-    add_p(
-        doc,
-        text="Department of Computer Science & Engineering (Cyber Security), Dayananda Sagar Academy of Technology and Management, Bengaluru, India",
-        align=WD_ALIGN_PARAGRAPH.CENTER,
-        space_before_pt=0,
-        space_after_pt=12,
-        italic=True,
-        font_size_pt=9.0,
-        keep_with_next=True,
+    t_auth = doc.add_table(rows=2, cols=3)
+    t_auth.alignment = WD_TABLE_ALIGNMENT.CENTER
+    tblPr_auth = t_auth._tbl.tblPr
+    borders_auth = parse_xml(
+        f"<w:tblBorders {nsdecls('w')}>"
+        '<w:top w:val="single" w:sz="4" w:space="0" w:color="auto"/>'
+        '<w:left w:val="single" w:sz="4" w:space="0" w:color="auto"/>'
+        '<w:bottom w:val="single" w:sz="4" w:space="0" w:color="auto"/>'
+        '<w:right w:val="single" w:sz="4" w:space="0" w:color="auto"/>'
+        '<w:insideH w:val="single" w:sz="4" w:space="0" w:color="auto"/>'
+        '<w:insideV w:val="single" w:sz="4" w:space="0" w:color="auto"/>'
+        "</w:tblBorders>"
     )
+    tblPr_auth.append(borders_auth)
+
+    for r_idx, row in enumerate(t_auth.rows):
+        trPr = row._tr.get_or_add_trPr()
+        if not trPr.xpath("./w:cantSplit"):
+            trPr.append(parse_xml(f"<w:cantSplit {nsdecls('w')}/>"))
+
+        for c_idx, cell in enumerate(row.cells):
+            cell.width = Inches(2.25)
+            set_cell_margins(cell, top=40, bottom=40, left=40, right=40)
+            name, dept, college, city = authors_data[r_idx][c_idx]
+
+            # Paragraph 0: Name
+            p0 = cell.paragraphs[0]
+            p0.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            p0.paragraph_format.space_before = Pt(0)
+            p0.paragraph_format.space_after = Pt(2)
+            p0.paragraph_format.line_spacing = 1.0
+            r0 = p0.add_run(name)
+            r0.bold = True
+            r0.font.name = "Times New Roman"
+            r0.font.size = Pt(10.0)
+
+            # Paragraph 1: Department
+            p1 = cell.add_paragraph()
+            p1.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            p1.paragraph_format.space_before = Pt(0)
+            p1.paragraph_format.space_after = Pt(1)
+            p1.paragraph_format.line_spacing = 1.0
+            r1 = p1.add_run(dept)
+            r1.italic = True
+            r1.font.name = "Times New Roman"
+            r1.font.size = Pt(8.5)
+
+            # Paragraph 2: College
+            p2 = cell.add_paragraph()
+            p2.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            p2.paragraph_format.space_before = Pt(0)
+            p2.paragraph_format.space_after = Pt(1)
+            p2.paragraph_format.line_spacing = 1.0
+            r2 = p2.add_run(college)
+            r2.italic = True
+            r2.font.name = "Times New Roman"
+            r2.font.size = Pt(8.5)
+
+            # Paragraph 3: City
+            p3 = cell.add_paragraph()
+            p3.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            p3.paragraph_format.space_before = Pt(0)
+            p3.paragraph_format.space_after = Pt(8)
+            p3.paragraph_format.line_spacing = 1.0
+            r3 = p3.add_run(city)
+            r3.italic = True
+            r3.font.name = "Times New Roman"
+            r3.font.size = Pt(8.5)
+
+    add_p(doc, "", space_before_pt=0, space_after_pt=6)
 
     # =========================================================================
     # SECTION 1: Abstract, Index Terms, Sections I-IV, Table I & II (2 Columns)
