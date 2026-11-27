@@ -83,8 +83,19 @@ def create_app(
                 }
             )
             return
+
+        from eval.mitre import tag_events
+        from mimicnet.rules import rules_from
+
+        session = session.model_copy(update={"mitre": tag_events(session.events)})
+        proposed_rules = rules_from(session)
+
         store.save_session(session)
         store.set_alert_engaged(alert.alert_id, session.session_id)
+        for r in proposed_rules:
+            store.save_rule(r)
+            publish_rule(r)
+
         for event in session.events:
             publish_session_event(session.session_id, event.model_dump(mode="json"))
         hub.publish(
