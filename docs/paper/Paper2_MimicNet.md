@@ -140,7 +140,9 @@ We benchmarked MimicNet across two execution paradigms: lightweight in-process e
 | Concurrency Rejection Latency | < 0.001 ms | 0.0018 ms | Immediate `EngageBusy` rejection |
 | Cleanup Guarantee | 100.0% (in-memory GC) | 100.0% (0 orphaned containers) | Ephemeral resource cleanup |
 
-The empirical measurements confirm that in-process execution completes in under 0.04 ms, providing an ideal mechanism for continuous unit integration testing. Containerized execution incurs an average overhead of 618.40 ms, dominated by Docker daemon container creation and namespace configuration. Memory utilization remained well within the 128 MB boundary, averaging 18.25 MB under peak execution. When a concurrent alert arrived during an active session, the mutex lock rejected the request in 0.0018 ms, preventing host overload.
+The empirical measurements confirm that in-process execution completes in under 0.04 ms, providing an ideal mechanism for continuous unit integration testing. Containerized execution incurs an average overhead of 618.40 ms, dominated by Docker daemon container creation and namespace configuration. Memory utilization remained well within the 128 MB boundary, averaging 18.25 MB under peak execution. When a concurrent alert arrived during an active session, the mutex lock rejected the request in 0.0018 ms, preventing host overload. Fig. 1 illustrates the comparative latency distributions across in-process and containerized lifecycle stages.
+
+![Fig. 1. Runtime latency breakdown comparing in-process emulation pipeline stages against full Docker container lifecycle.](eval/results/paper2_fig1_latency_breakdown.png)
 
 ### B. ATT&CK Attribution Fidelity and Evidence Verification
 Evaluating the automated mapping module across 500 runs demonstrated 100% precision and recall on verified commands. The scripted attacker sequence yielded six canonical MITRE ATT&CK technique tags (Table II).
@@ -150,6 +152,10 @@ Crucially, the attribution engine successfully avoided false positives:
 - Synthetic unmapped commands (`frobnicate`, `zork --play-game`, `curl evil.com`) produced zero tags.
 - Non-command session events (`connect`, `disconnect`, `timeout`) generated zero tags.
 - MITRE tagging consumed an average of 0.0151 ms per session (standard deviation 0.0014 ms), introducing negligible processing overhead.
+
+Fig. 3 confirms the mapping fidelity, showing 100% precision on verified techniques alongside complete rejection of negative controls.
+
+![Fig. 3. MITRE ATT&CK technique mapping coverage and zero-hallucination verification across positive commands and negative controls.](eval/results/paper2_fig3_mitre_mapping.png)
 
 ### C. Closed-Loop Feedback Acceleration: Statistical vs. Rule-Based Detection
 A central hypothesis of the Operation Cactus architecture is that automated rule synthesis accelerates threat re-detection compared to passive statistical classification. We evaluated detection latency on replayed DNS tunnel PCAPs before and after rule synthesis.
@@ -162,7 +168,9 @@ A central hypothesis of the Operation Cactus architecture is that automated rule
 | **Closed-Loop Rule Hit (MimicNet)** | **CoverTrace Active Rule Table** | **Deterministic `qname_suffix` Match** | **1 packet** | **0.00 ms** | **1.0000 (deterministic)** |
 | **Closed-Loop IP Hit (MimicNet)** | **CoverTrace Active Rule Table** | **Deterministic `src_ip` Match** | **1 packet** | **0.00 ms** | **1.0000 (deterministic)** |
 
-As shown in Table IV, statistical detection requires observing traffic across a sliding temporal window (16 packets for DNS entropy; 24 packets for FlowSight flow cadence). In contrast, once an analyst approves a synthesized rule, CoverTrace flags matching traffic on the very first packet. Algorithmic detection delay drops from 14.20 seconds down to 0.00 ms, converting a slow covert channel into an immediate deterministic alert.
+As shown in Table IV, statistical detection requires observing traffic across a sliding temporal window (16 packets for DNS entropy; 24 packets for FlowSight flow cadence). In contrast, once an analyst approves a synthesized rule, CoverTrace flags matching traffic on the very first packet. Algorithmic detection delay drops from 14.20 seconds down to 0.00 ms, converting a slow covert channel into an immediate deterministic alert. Fig. 2 plots the packet and temporal reductions achieved by closed-loop feedback.
+
+![Fig. 2. Closed-loop re-detection delay acceleration comparing multi-packet statistical windows against immediate deterministic rule hits.](eval/results/paper2_fig2_detection_acceleration.png)
 
 ### D. Ablation Analysis & Deception Fingerprint Resilience
 We conducted ablation tests on deception components to evaluate system resilience:

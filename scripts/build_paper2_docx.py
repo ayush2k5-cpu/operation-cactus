@@ -1,13 +1,17 @@
 """Build publication-grade IEEE two-column Paper 2 document for MimicNet.
 
-Follows the exact IEEE 4-section layout:
+Follows the publication-grade IEEE 4-section layout:
 - Section 0: Title, Subtitle, Author Block (1-column full page width)
-- Section 1: Abstract, Index Terms, Sections I-IV, Table I & II (2-column IEEE format)
-- Section 2: Table III & Table IV (1-column full page width for wide tables)
-- Section 3: Section VI Subsections B-G, Section VII Conclusion, References (2-column IEEE format)
+- Section 1: Abstract, Index Terms, Sections I-IV (2-column IEEE format)
+- Section 2: Section V, Tables I-II, Section VI.A-C, Tables III-IV, Figures 1-3 (1-column full page width for wide tables & figures)
+- Section 3: Section VI Subsections D-G, Section VII Conclusion, References (2-column IEEE format)
 
-Ensures flawless typography, Times New Roman throughout, IEEE borders,
-and clean cell padding.
+Ensures:
+- Times New Roman throughout
+- Zero table row splits (<w:cantSplit/> on all rows)
+- Tables stay completely on one page (atomic keep_with_next binding)
+- High-resolution figures embedded (300 DPI)
+- Clean IEEE borders and padding
 """
 
 from __future__ import annotations
@@ -27,12 +31,17 @@ from docx.shared import Inches, Pt, RGBColor
 ROOT = Path(__file__).resolve().parent.parent
 DOCS_PAPER = ROOT / "docs" / "paper"
 DESKTOP = Path(os.environ.get("USERPROFILE", "C:/Users/Admin")) / "Desktop"
+RESULTS_DIR = ROOT / "eval" / "results"
+
+FIG1_PATH = RESULTS_DIR / "paper2_fig1_latency_breakdown.png"
+FIG2_PATH = RESULTS_DIR / "paper2_fig2_detection_acceleration.png"
+FIG3_PATH = RESULTS_DIR / "paper2_fig3_mitre_mapping.png"
 
 TARGET_DOCX = DOCS_PAPER / "Operation_Cactus_Paper2_MimicNet.docx"
 DESKTOP_DOCX = DESKTOP / "Operation_Cactus_Paper2_MimicNet.docx"
 
 
-def set_cell_margins(cell, top=60, bottom=60, left=90, right=90):
+def set_cell_margins(cell, top=50, bottom=50, left=70, right=70):
     """Set explicit padding inside a table cell (in dxa: 20 dxa = 1 pt)."""
     tcPr = cell._tc.get_or_add_tcPr()
     tcMar = OxmlElement("w:tcMar")
@@ -170,11 +179,12 @@ def add_heading_3(doc: Document, text: str):
 
 
 def format_table(table, col_widths, col_alignments, header_bg="F0F4F8"):
+    """Format table with IEEE borders, cantSplit on all rows, and keep_with_next to ensure it stays on one page."""
     set_table_ieee_borders(table)
     table.alignment = WD_TABLE_ALIGNMENT.CENTER
 
+    total_rows = len(table.rows)
     for row_idx, row in enumerate(table.rows):
-        # CantSplit rule
         trPr = row._tr.get_or_add_trPr()
         if not trPr.xpath("./w:cantSplit"):
             trPr.append(parse_xml(f"<w:cantSplit {nsdecls('w')}/>"))
@@ -183,9 +193,12 @@ def format_table(table, col_widths, col_alignments, header_bg="F0F4F8"):
         if is_header:
             trPr.append(parse_xml(f"<w:tblHeader {nsdecls('w')}/>"))
 
+        # Keep all rows except the last row bound to the next row so the table never splits across pages
+        is_not_last_row = row_idx < total_rows - 1
+
         for col_idx, cell in enumerate(row.cells):
             cell.width = col_widths[col_idx]
-            set_cell_margins(cell, top=50, bottom=50, left=70, right=70)
+            set_cell_margins(cell, top=45, bottom=45, left=65, right=65)
 
             if is_header:
                 set_cell_shading(cell, header_bg)
@@ -195,12 +208,34 @@ def format_table(table, col_widths, col_alignments, header_bg="F0F4F8"):
                 p.paragraph_format.space_before = Pt(2)
                 p.paragraph_format.space_after = Pt(2)
                 p.paragraph_format.line_spacing = 1.0
-                p.paragraph_format.keep_with_next = is_header
+                p.paragraph_format.keep_with_next = is_not_last_row
                 for run in p.runs:
                     run.font.name = "Times New Roman"
                     run.font.size = Pt(8.5)
                     if is_header:
                         run.bold = True
+
+
+def add_figure(doc: Document, img_path: Path, caption_text: str, width_in: float = 6.2):
+    """Add a centered high-resolution figure with caption."""
+    if not img_path.exists():
+        return
+    p_img = doc.add_paragraph()
+    p_img.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p_img.paragraph_format.space_before = Pt(8)
+    p_img.paragraph_format.space_after = Pt(2)
+    p_img.paragraph_format.keep_with_next = True
+    p_img.add_run().add_picture(str(img_path), width=Inches(width_in))
+
+    p_cap = doc.add_paragraph()
+    p_cap.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p_cap.paragraph_format.space_before = Pt(2)
+    p_cap.paragraph_format.space_after = Pt(8)
+    p_cap.paragraph_format.keep_with_next = False
+    r = p_cap.add_run(caption_text)
+    r.font.name = "Times New Roman"
+    r.font.size = Pt(8.5)
+    r.italic = True
 
 
 def build_paper2_doc():
@@ -213,7 +248,7 @@ def build_paper2_doc():
     normal_style.font.color.rgb = RGBColor(0, 0, 0)
 
     # =========================================================================
-    # SECTION 0: Title, Subtitle, Author Block (1 Column)
+    # SECTION 0: Title, Subtitle, Author Block Table (1 Column)
     # =========================================================================
     sec0 = doc.sections[0]
     apply_section_page_setup(sec0, is_continuous=False)
@@ -234,10 +269,7 @@ def build_paper2_doc():
     # Subtitle
     add_p(
         doc,
-        text=(
-            "An Empirical Evaluation of the MimicNet Deception Architecture, "
-            "Container Isolation Constraints, and MITRE ATT&CK Mapping"
-        ),
+        text="An Empirical Evaluation of the MimicNet Deception Architecture, Container Isolation Constraints, and MITRE ATT&CK Mapping",
         align=WD_ALIGN_PARAGRAPH.CENTER,
         space_before_pt=0,
         space_after_pt=10,
@@ -310,6 +342,7 @@ def build_paper2_doc():
         if not trPr.xpath("./w:cantSplit"):
             trPr.append(parse_xml(f"<w:cantSplit {nsdecls('w')}/>"))
 
+        is_not_last_row_auth = r_idx < len(t_auth.rows) - 1
         for c_idx, cell in enumerate(row.cells):
             cell.width = Inches(2.25)
             set_cell_margins(cell, top=40, bottom=40, left=40, right=40)
@@ -321,6 +354,7 @@ def build_paper2_doc():
             p0.paragraph_format.space_before = Pt(0)
             p0.paragraph_format.space_after = Pt(2)
             p0.paragraph_format.line_spacing = 1.0
+            p0.paragraph_format.keep_with_next = is_not_last_row_auth
             r0 = p0.add_run(name)
             r0.bold = True
             r0.font.name = "Times New Roman"
@@ -332,6 +366,7 @@ def build_paper2_doc():
             p1.paragraph_format.space_before = Pt(0)
             p1.paragraph_format.space_after = Pt(1)
             p1.paragraph_format.line_spacing = 1.0
+            p1.paragraph_format.keep_with_next = is_not_last_row_auth
             r1 = p1.add_run(dept)
             r1.italic = True
             r1.font.name = "Times New Roman"
@@ -343,6 +378,7 @@ def build_paper2_doc():
             p2.paragraph_format.space_before = Pt(0)
             p2.paragraph_format.space_after = Pt(1)
             p2.paragraph_format.line_spacing = 1.0
+            p2.paragraph_format.keep_with_next = is_not_last_row_auth
             r2 = p2.add_run(college)
             r2.italic = True
             r2.font.name = "Times New Roman"
@@ -354,15 +390,16 @@ def build_paper2_doc():
             p3.paragraph_format.space_before = Pt(0)
             p3.paragraph_format.space_after = Pt(8)
             p3.paragraph_format.line_spacing = 1.0
+            p3.paragraph_format.keep_with_next = is_not_last_row_auth
             r3 = p3.add_run(city)
             r3.italic = True
             r3.font.name = "Times New Roman"
             r3.font.size = Pt(8.5)
 
-    add_p(doc, "", space_before_pt=0, space_after_pt=6)
+    add_p(doc, "", space_before_pt=0, space_after_pt=4)
 
     # =========================================================================
-    # SECTION 1: Abstract, Index Terms, Sections I-IV, Table I & II (2 Columns)
+    # SECTION 1: Abstract, Index Terms, Sections I-IV (2 Columns)
     # =========================================================================
     sec1 = doc.add_section(WD_SECTION_START.CONTINUOUS)
     apply_section_page_setup(sec1, is_continuous=True)
@@ -599,6 +636,13 @@ def build_paper2_doc():
         "a deterministic detection score of 1.0, bypassing multi-packet statistical accumulation.",
     )
 
+    # =========================================================================
+    # SECTION 2: Full-Width 1-Column Section for Tables I-IV and Figures 1-3
+    # =========================================================================
+    sec2 = doc.add_section(WD_SECTION_START.CONTINUOUS)
+    apply_section_page_setup(sec2, is_continuous=True)
+    set_cols(sec2, num_cols=1)
+
     # V. EXPERIMENTAL CONFIGURATION
     add_heading_1(doc, "V. Experimental Configuration")
     add_p(
@@ -608,13 +652,13 @@ def build_paper2_doc():
         "adversary reconnaissance and covert exfiltration trace.",
     )
 
-    # TABLE I Caption
+    # TABLE I: Unbreakable Full-Width Table
     p_t1 = add_p(
         doc,
         text="TABLE I: HONEYPOT SANDBOX AND RUNTIME EXECUTION PARAMETERS",
         align=WD_ALIGN_PARAGRAPH.CENTER,
-        space_before_pt=6,
-        space_after_pt=2,
+        space_before_pt=8,
+        space_after_pt=3,
         bold=True,
         font_size_pt=8.5,
         keep_with_next=True,
@@ -670,22 +714,22 @@ def build_paper2_doc():
         ],
     ]
     t1 = doc.add_table(rows=len(t1_data), cols=3)
-    col_w1 = [Inches(1.0), Inches(1.15), Inches(1.2)]
+    col_w1 = [Inches(1.8), Inches(2.2), Inches(2.77)]
     col_a1 = [WD_ALIGN_PARAGRAPH.LEFT, WD_ALIGN_PARAGRAPH.LEFT, WD_ALIGN_PARAGRAPH.LEFT]
     for r_i, r in enumerate(t1_data):
         for c_i, val in enumerate(r):
             t1.rows[r_i].cells[c_i].paragraphs[0].text = val
     format_table(t1, col_w1, col_a1)
 
-    add_p(doc, "", space_after_pt=6)
+    add_p(doc, "", space_before_pt=0, space_after_pt=6)
 
-    # TABLE II Caption
+    # TABLE II: Unbreakable Full-Width Table
     p_t2 = add_p(
         doc,
         text="TABLE II: ATTACKER RECONNAISSANCE TRACE AND MITRE ATT&CK MAPPING MATRIX",
         align=WD_ALIGN_PARAGRAPH.CENTER,
-        space_before_pt=6,
-        space_after_pt=2,
+        space_before_pt=8,
+        space_after_pt=3,
         bold=True,
         font_size_pt=8.5,
         keep_with_next=True,
@@ -696,10 +740,10 @@ def build_paper2_doc():
         [
             "Step",
             "Typed Command Line",
-            "Emulated Output",
-            "ATT&CK ID",
+            "Emulated System Output",
+            "Matched Technique",
             "ATT&CK Technique Name",
-            "Verification",
+            "Verification Status",
         ],
         ["1", "whoami", "root", "T1033", "System Owner/User Discovery", "Verified (2026-11-14)"],
         [
@@ -745,7 +789,7 @@ def build_paper2_doc():
         ["5", "exit", "(Session disconnect)", "—", "(Session Termination Event)", "n/a"],
     ]
     t2 = doc.add_table(rows=len(t2_data), cols=6)
-    col_w2 = [Inches(0.3), Inches(0.85), Inches(0.85), Inches(0.45), Inches(0.9), Inches(0.5)]
+    col_w2 = [Inches(0.5), Inches(1.5), Inches(1.5), Inches(0.85), Inches(1.42), Inches(1.0)]
     col_a2 = [
         WD_ALIGN_PARAGRAPH.CENTER,
         WD_ALIGN_PARAGRAPH.LEFT,
@@ -759,12 +803,7 @@ def build_paper2_doc():
             t2.rows[r_i].cells[c_i].paragraphs[0].text = val
     format_table(t2, col_w2, col_a2)
 
-    # =========================================================================
-    # SECTION 2: Section VI Opening, Table III & Table IV (1 Column Full Width)
-    # =========================================================================
-    sec2 = doc.add_section(WD_SECTION_START.CONTINUOUS)
-    apply_section_page_setup(sec2, is_continuous=True)
-    set_cols(sec2, num_cols=1)
+    add_p(doc, "", space_before_pt=0, space_after_pt=8)
 
     # VI. RESULTS AND PERFORMANCE EVALUATION
     add_heading_1(doc, "VI. Results and Performance Evaluation")
@@ -775,13 +814,13 @@ def build_paper2_doc():
         "container execution (engage()). Table III summarizes latency, throughput, and resource containment over 500 independent trials.",
     )
 
-    # TABLE III Caption
+    # TABLE III: Unbreakable Full-Width Table
     p_t3 = add_p(
         doc,
         text="TABLE III: RUNTIME BENCHMARK: IN-PROCESS VS. CONTAINERIZED ENGAGEMENT (N=500)",
         align=WD_ALIGN_PARAGRAPH.CENTER,
-        space_before_pt=6,
-        space_after_pt=2,
+        space_before_pt=8,
+        space_after_pt=3,
         bold=True,
         font_size_pt=8.5,
         keep_with_next=True,
@@ -830,7 +869,7 @@ def build_paper2_doc():
         ],
     ]
     t3 = doc.add_table(rows=len(t3_data), cols=4)
-    col_w3 = [Inches(1.8), Inches(1.6), Inches(1.9), Inches(1.5)]
+    col_w3 = [Inches(1.8), Inches(1.6), Inches(1.9), Inches(1.47)]
     col_a3 = [
         WD_ALIGN_PARAGRAPH.LEFT,
         WD_ALIGN_PARAGRAPH.CENTER,
@@ -842,15 +881,61 @@ def build_paper2_doc():
             t3.rows[r_i].cells[c_i].paragraphs[0].text = val
     format_table(t3, col_w3, col_a3)
 
-    add_p(doc, "", space_after_pt=6)
+    add_p(
+        doc,
+        "The empirical measurements confirm that in-process execution completes in under 0.04 ms, providing an ideal mechanism "
+        "for continuous unit integration testing. Containerized execution incurs an average overhead of 618.40 ms, dominated by "
+        "Docker daemon container creation and namespace configuration. Memory utilization remained well within the 128 MB boundary, "
+        "averaging 18.25 MB under peak execution. When a concurrent alert arrived during an active session, the mutex lock rejected "
+        "the request in 0.0018 ms, preventing host overload. Fig. 1 illustrates the comparative latency distributions across in-process "
+        "and containerized lifecycle stages.",
+        space_before_pt=4,
+        space_after_pt=4,
+    )
 
-    # TABLE IV Caption
+    # FIG 1
+    add_figure(
+        doc,
+        FIG1_PATH,
+        "Fig. 1. Runtime latency breakdown comparing in-process emulation pipeline stages against full Docker container lifecycle.",
+        width_in=6.4,
+    )
+
+    # Subsection B
+    add_heading_2(doc, "B. ATT&CK Attribution Fidelity and Evidence Verification")
+    add_p(
+        doc,
+        "Evaluating the automated mapping module across 500 runs demonstrated 100% precision and recall on verified commands. "
+        "The scripted attacker sequence yielded six canonical MITRE ATT&CK technique tags (Table II). Crucially, the attribution engine "
+        "successfully avoided false positives: the /bin/sh string in cat /etc/passwd reply was ignored (zero false T1059.004 tags), "
+        "unmapped commands produced zero tags, and MITRE tagging consumed only 0.0151 ms per session. Fig. 3 confirms the attribution "
+        "precision across verified techniques and negative control baselines.",
+    )
+
+    # FIG 3
+    add_figure(
+        doc,
+        FIG3_PATH,
+        "Fig. 3. MITRE ATT&CK technique mapping coverage and zero-hallucination verification across positive commands and negative controls.",
+        width_in=6.2,
+    )
+
+    # Subsection C
+    add_heading_2(doc, "C. Closed-Loop Feedback Acceleration: Statistical vs. Rule-Based Detection")
+    add_p(
+        doc,
+        "A central hypothesis of the Operation Cactus architecture is that automated rule synthesis accelerates threat re-detection "
+        "compared to passive statistical classification. We evaluated detection latency on replayed DNS tunnel PCAPs before and "
+        "after rule synthesis.",
+    )
+
+    # TABLE IV: Unbreakable Full-Width Table
     p_t4 = add_p(
         doc,
         text="TABLE IV: CLOSED-LOOP DETECTION LATENCY AND RULE EXTRACTION METRICS",
         align=WD_ALIGN_PARAGRAPH.CENTER,
-        space_before_pt=6,
-        space_after_pt=2,
+        space_before_pt=8,
+        space_after_pt=3,
         bold=True,
         font_size_pt=8.5,
         keep_with_next=True,
@@ -900,7 +985,7 @@ def build_paper2_doc():
         ],
     ]
     t4 = doc.add_table(rows=len(t4_data), cols=6)
-    col_w4 = [Inches(1.5), Inches(1.4), Inches(1.7), Inches(0.8), Inches(0.7), Inches(0.7)]
+    col_w4 = [Inches(1.5), Inches(1.4), Inches(1.7), Inches(0.8), Inches(0.7), Inches(0.67)]
     col_a4 = [
         WD_ALIGN_PARAGRAPH.LEFT,
         WD_ALIGN_PARAGRAPH.LEFT,
@@ -914,52 +999,30 @@ def build_paper2_doc():
             t4.rows[r_i].cells[c_i].paragraphs[0].text = val
     format_table(t4, col_w4, col_a4)
 
-    # =========================================================================
-    # SECTION 3: Subsections B-G, Section VII, References (2 Columns)
-    # =========================================================================
-    sec3 = doc.add_section(WD_SECTION_START.CONTINUOUS)
-    apply_section_page_setup(sec3, is_continuous=True)
-    set_cols(sec3, num_cols=2, space_dxa=432)
-
-    add_p(
-        doc,
-        "The empirical measurements confirm that in-process execution completes in under 0.04 ms, providing an ideal mechanism "
-        "for continuous unit integration testing. Containerized execution incurs an average overhead of 618.40 ms, dominated by "
-        "Docker daemon container creation and namespace configuration. Memory utilization remained well within the 128 MB boundary, "
-        "averaging 18.25 MB under peak execution. When a concurrent alert arrived during an active session, the mutex lock rejected "
-        "the request in 0.0018 ms, preventing host overload.",
-    )
-
-    add_heading_2(doc, "B. ATT&CK Attribution Fidelity and Evidence Verification")
-    add_p(
-        doc,
-        "Evaluating the automated mapping module across 500 runs demonstrated 100% precision and recall on verified commands. "
-        "The scripted attacker sequence yielded six canonical MITRE ATT&CK technique tags (Table II).",
-    )
-    add_p(
-        doc,
-        "Crucially, the attribution engine successfully avoided false positives:\n"
-        "- The /bin/sh string embedded in the emulated reply for cat /etc/passwd was correctly ignored, yielding no false "
-        "assignment of technique T1059.004 (Unix Shell).\n"
-        "- Synthetic unmapped commands (frobnicate, zork --play-game, curl evil.com) produced zero tags.\n"
-        "- Non-command session events (connect, disconnect, timeout) generated zero tags.\n"
-        "- MITRE tagging consumed an average of 0.0151 ms per session (standard deviation 0.0014 ms), introducing negligible processing overhead.",
-    )
-
-    add_heading_2(doc, "C. Closed-Loop Feedback Acceleration: Statistical vs. Rule-Based Detection")
-    add_p(
-        doc,
-        "A central hypothesis of the Operation Cactus architecture is that automated rule synthesis accelerates threat re-detection "
-        "compared to passive statistical classification. We evaluated detection latency on replayed DNS tunnel PCAPs before and "
-        "after rule synthesis.",
-    )
     add_p(
         doc,
         "As shown in Table IV, statistical detection requires observing traffic across a sliding temporal window (16 packets for DNS "
         "entropy; 24 packets for FlowSight flow cadence). In contrast, once an analyst approves a synthesized rule, CoverTrace flags "
         "matching traffic on the very first packet. Algorithmic detection delay drops from 14.20 seconds down to 0.00 ms, converting "
-        "a slow covert channel into an immediate deterministic alert.",
+        "a slow covert channel into an immediate deterministic alert. Fig. 2 plots the packet and temporal reductions achieved by closed-loop feedback.",
+        space_before_pt=4,
+        space_after_pt=4,
     )
+
+    # FIG 2
+    add_figure(
+        doc,
+        FIG2_PATH,
+        "Fig. 2. Closed-loop re-detection delay acceleration comparing multi-packet statistical windows against immediate deterministic rule hits.",
+        width_in=6.4,
+    )
+
+    # =========================================================================
+    # SECTION 3: Subsections D-G, Section VII, References (2 Columns)
+    # =========================================================================
+    sec3 = doc.add_section(WD_SECTION_START.CONTINUOUS)
+    apply_section_page_setup(sec3, is_continuous=True)
+    set_cols(sec3, num_cols=2, space_dxa=432)
 
     add_heading_2(doc, "D. Ablation Analysis & Deception Fingerprint Resilience")
     add_p(
