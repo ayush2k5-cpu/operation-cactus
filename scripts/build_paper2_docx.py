@@ -227,7 +227,7 @@ def build_paper2():
         "Containerization has transformed high-interaction honeypot deployment. Lightweight container runtimes allow rapid "
         "spawning of complete Linux operating environments. However, containerized deception introduces severe security hazards. "
         "Bui [5] demonstrated that default Docker configurations share kernel resources with the host, allowing root attackers "
-        "to exploit kernel vulnerabilities or unmasked procfs interfaces to achieve host breakouts. Al-Daeef et al. [6] analyzed "
+        "to exploit kernel vulnerabilities or unmasked procfs interfaces to achieve host breakouts. Zhang et al. [6] analyzed "
         "container breakout CVEs, emphasizing that multi-tenant honeypots require aggressive privilege stripping, read-only root "
         "mounts, and strict cgroup boundaries to guarantee host isolation.",
     )
@@ -236,9 +236,9 @@ def build_paper2():
         "Automated threat attribution relies on standardized adversary behavior frameworks. The MITRE ATT&CK taxonomy [4] provides "
         "an industry standard for mapping observed techniques, tactics, and procedures (TTPs) across the adversary lifecycle. "
         "While prior works categorize post-incident forensic dumps, real-time closed-loop countermeasure generation remains "
-        "sparsely implemented. Krupski et al. [7] examined deception-based defensive filtering against covert channels. In "
-        "Operation Cactus [8], we benchmarked baseline detection algorithms; this paper extends that foundation by evaluating "
-        "the active deception response pipeline.",
+        "sparsely implemented. Almeshekah and Spafford [7] established formal models for planning and integrating defensive deception "
+        "into computer security architectures. In Operation Cactus [8], we benchmarked baseline detection algorithms; this paper "
+        "extends that foundation by evaluating the active deception response pipeline.",
     )
     update_paragraph(
         doc.paragraphs[14],
@@ -755,12 +755,12 @@ def build_paper2():
     update_paragraph(doc.paragraphs[76], "References", font_size_pt=10.0, bold=True)
     refs = [
         '[1] N. Provos, "A Virtual Honeypot Framework," in Proc. 13th USENIX Security Symposium, San Diego, CA, USA, 2004, pp. 1–14.',
-        '[2] F. Cohen, "A Note on the Role of Deception in Information Protection," Computers & Security, vol. 17, no. 5, pp. 383–406, 1998.',
-        '[3] M. Nawrocki, M. Wählisch, C. Schmidt, C. Keil, and J. Schönfelder, "A Survey on Honeypot Software and Data Analysis," IEEE Communications Surveys & Tutorials, vol. 21, no. 3, pp. 2486–2520, 2019.',
+        '[2] F. Cohen, "A Note on the Role of Deception in Information Protection," Computers & Security, vol. 17, no. 6, pp. 483–506, 1998.',
+        '[3] M. Nawrocki, M. Wählisch, T. C. Schmidt, C. Keil, and J. Schönfelder, "A Survey on Honeypot Software and Data Analysis," arXiv preprint arXiv:1608.06249, 2016.',
         '[4] B. E. Strom et al., "MITRE ATT&CK: Design and Philosophy," The MITRE Corporation, Bedford, MA, USA, Technical Report MTR180185, 2018.',
-        '[5] T. Bui, "Analysis of Docker Security," Aalto University School of Science, Espoo, Finland, Research Report, 2015.',
-        '[6] A. Al-Daeef, N. Basir, and M. Saudi, "Security Vulnerabilities in Docker Containers: A Survey," IEEE Access, vol. 9, pp. 136594–136611, 2021.',
-        '[7] J. Krupski, W. Graniszewski, and K. Szczypiorski, "StegShield: Information Hiding Detection Using Deceptive Techniques," IEEE Transactions on Information Forensics and Security, vol. 16, pp. 3201–3214, 2021.',
+        '[5] T. Bui, "Analysis of Docker Security," Aalto University School of Science, Espoo, Finland, Research Report, arXiv:1501.02967, 2015.',
+        '[6] K. Zhang, X. Ding, and X. Tang, "Security Vulnerabilities in Docker Containers: A Survey," IEEE Access, vol. 7, pp. 92860–92870, 2019.',
+        '[7] M. H. Almeshekah and E. H. Spafford, "Planning and Integrating Deception into Computer Security Defenses," in Proc. 2014 New Security Paradigms Workshop (NSPW), Victoria, BC, Canada, 2014, pp. 127–138.',
         '[8] A. Rathod, S. Khan, S. Tripathi, B. Moray, Gerard Deepak, and S. Ranjan, "Operation Cactus: Behavioral Traffic Analysis and Covert Channel Detection for Encrypted Network Threats," in Proc. Baseline Benchmark Review, Bengaluru, India, 2026.',
         '[9] MITRE Corporation, "ATT&CK Enterprise Matrix v14," MITRE Corporation, McLean, VA, USA, Tech. Rep., 2023.',
     ]
