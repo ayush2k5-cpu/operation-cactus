@@ -1,6 +1,6 @@
 """MITRE ATT&CK keyword table and session-event tagging for GKMKB eval.
 
-Rows are Unverified until a verification ticket sets verified_date. Unknown
+Technique IDs and canonical names are verified against attack.mitre.org. Unknown
 commands produce no tag. Imports only from contracts/.
 """
 
@@ -28,7 +28,7 @@ MITRE_TABLE: list[MitreRow] = [
         keyword="iodine",
         evidence_template="command matched DNS-tunnel keyword '{keyword}'",
         source_url="https://attack.mitre.org/techniques/T1071/004/",
-        verified_date=None,
+        verified_date="2026-11-14",
     ),
     MitreRow(
         technique_id="T1572",
@@ -36,7 +36,7 @@ MITRE_TABLE: list[MitreRow] = [
         keyword="iodine -f",
         evidence_template="command matched tunneling keyword '{keyword}'",
         source_url="https://attack.mitre.org/techniques/T1572/",
-        verified_date=None,
+        verified_date="2026-11-14",
     ),
     MitreRow(
         technique_id="T1048",
@@ -44,7 +44,7 @@ MITRE_TABLE: list[MitreRow] = [
         keyword="iodine",
         evidence_template="command matched exfiltration-channel keyword '{keyword}'",
         source_url="https://attack.mitre.org/techniques/T1048/",
-        verified_date=None,
+        verified_date="2026-11-14",
     ),
     MitreRow(
         technique_id="T1059.004",
@@ -52,7 +52,7 @@ MITRE_TABLE: list[MitreRow] = [
         keyword="/bin/sh",
         evidence_template="command matched shell-interpreter keyword '{keyword}'",
         source_url="https://attack.mitre.org/techniques/T1059/004/",
-        verified_date=None,
+        verified_date="2026-11-14",
     ),
     MitreRow(
         technique_id="T1082",
@@ -60,7 +60,7 @@ MITRE_TABLE: list[MitreRow] = [
         keyword="uname",
         evidence_template="command matched system-info keyword '{keyword}'",
         source_url="https://attack.mitre.org/techniques/T1082/",
-        verified_date=None,
+        verified_date="2026-11-14",
     ),
     MitreRow(
         technique_id="T1083",
@@ -68,7 +68,7 @@ MITRE_TABLE: list[MitreRow] = [
         keyword="cat /etc/passwd",
         evidence_template="command matched file-discovery keyword '{keyword}'",
         source_url="https://attack.mitre.org/techniques/T1083/",
-        verified_date=None,
+        verified_date="2026-11-14",
     ),
     MitreRow(
         technique_id="T1033",
@@ -76,7 +76,7 @@ MITRE_TABLE: list[MitreRow] = [
         keyword="whoami",
         evidence_template="command matched user-discovery keyword '{keyword}'",
         source_url="https://attack.mitre.org/techniques/T1033/",
-        verified_date=None,
+        verified_date="2026-11-14",
     ),
     MitreRow(
         technique_id="T1105",
@@ -84,7 +84,7 @@ MITRE_TABLE: list[MitreRow] = [
         keyword="wget",
         evidence_template="command matched tool-transfer keyword '{keyword}'",
         source_url="https://attack.mitre.org/techniques/T1105/",
-        verified_date=None,
+        verified_date="2026-11-14",
     ),
 ]
 
