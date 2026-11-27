@@ -9,89 +9,89 @@
 ---
 
 ## Abstract
-Operation Cactus pairs passive traffic analysis with an active deception subsystem, MimicNet, to contain and profile covert exfiltration sessions that bypass traditional perimeter defenses. When the detection pipeline flags an anomalous entity, MimicNet engages the suspect connection by spawning an isolated, ephemeral sandbox environment. This paper evaluates the architectural containment, runtime performance, and closed-loop threat feed synthesis of the MimicNet response engine. The sandbox enforces strict isolation boundaries: zero external network egress (`network_mode="none"`), an absolute 128 MB memory limit, a 0.5 CPU quota, complete Linux capability revocation (`cap_drop=["ALL"]`), and a 120-second hard watchdog timer. We evaluate session telemetry across 500 benchmark runs of a scripted reconnaissance and DNS tunneling trace modeled on standard post-compromise activity (`whoami`, `uname -a`, `cat /etc/passwd`, `iodine -f t.example.test`). The in-process shell emulator processes the complete interactive dialogue in an average of 0.0392 ms (standard deviation 0.0078 ms), while an automated keyword extraction engine maps typed commands to canonical MITRE ATT&CK enterprise techniques in 0.0151 ms with zero false attribution on unmapped inputs. From completed sessions, MimicNet synthesizes candidate detection rules in 0.0053 ms. Under a human-in-the-loop governance model, analyst approval promotes these rules into active CoverTrace filters, cutting re-detection latency from multi-packet sliding statistical windows down to immediate single-packet deterministic matching (0 ms algorithmic delay). Mutual exclusion locking prevents resource starvation by restricting active sandboxes to one per host, rejecting concurrent alerts within 0.002 ms. These empirical findings demonstrate that lightweight, resource-bounded container deception captures vital post-compromise intelligence without risking host stability or pipeline throughput.
+Operation Cactus connects passive flow analysis with an active deception module, MimicNet, to inspect covert network exfiltration when payload encryption blocks deep packet inspection. Once the detection pipeline raises an alert on an entity, MimicNet redirects the session into an emulated, short-lived sandbox. This benchmark measures the containment boundaries, runtime overhead, and threat intelligence synthesis of the response engine. The sandbox enforces five invariants: zero external network routing (`network_mode="none"`), a 128 MB RAM ceiling, a 0.5 CPU quota, complete Linux capability dropping (`cap_drop=["ALL"]`), and a 120-second execution timer. Over 500 test trials on a scripted adversary trace (`whoami`, `uname -a`, `cat /etc/passwd`, `iodine -f t.example.test`), the Python shell emulator processes the interactive session in an average of 0.0392 ms (standard deviation 0.0078 ms). An automated keyword matcher extracts canonical MITRE ATT&CK techniques in 0.0151 ms with zero false attribution on negative controls. MimicNet then extracts candidate detection rules from session logs in 0.0053 ms. Under human analyst review, an approved candidate rule enters CoverTrace. This drops re-detection delay from sliding statistical windows down to immediate single-packet matching (0 ms algorithmic delay). An inter-process mutex limits active sandboxes to one per host; concurrent alerts receive an `EngageBusy` rejection in 0.0018 ms. These benchmarks show that constrained container deception captures threat telemetry without compromising host stability or throughput.
 
 *Index Terms*—cyber deception, honeypots, container sandboxing, covert channel containment, MITRE ATT&CK mapping, closed-loop threat intelligence, incident response.
 
 ---
 
 ## I. Introduction
-Perimeter network defenses traditionally rely on dropping or resetting suspicious connections. While immediate blocking prevents direct data transfer, it provides security analysts with zero visibility into adversary intent, operational tools, or subsequent compromise stages. Furthermore, in environments where transport-layer encryption conceals application payloads, initial detection signals frequently carry operational uncertainty. Severing connections based solely on statistical anomalies risks disrupting legitimate business workflows.
+Network security teams generally react to intrusions by dropping packets or resetting TCP handshakes. Outright termination stops the active connection, but it reveals nothing about who is attacking or what software they planned to execute. In networks secured by transport-layer encryption, detection models must make decisions on noisy metadata. Severing connections based on probabilistic thresholds alone disrupts legitimate enterprise traffic.
 
-Operation Cactus addresses this operational dilemma through an integrated two-stage defensive architecture:
-1. **Detection Middleware (FlowSight and CoverTrace):** Monitors passive flow statistics and protocol-level covert channel indicators without inspecting encrypted payloads, as established in our initial baseline study [8].
-2. **Deception Response Layer (MimicNet):** Dynamically redirects suspicious sessions into a locked-down, interactive decoy container instead of terminating the connection.
+Operation Cactus implements a two-stage response structure:
+1. Detection Middleware (FlowSight and CoverTrace): Evaluates flow statistics and protocol-level covert channel indicators without decrypting payloads [8].
+2. Deception Response Layer (MimicNet): Routes flagged connections into an isolated honeypot container instead of closing the TCP socket.
 
-This architecture changes the defensive calculus. Benign sessions flagged by false positives interact with an emulated service without data loss or terminal disruption. Malicious actors, conversely, believe their compromise succeeded and proceed to execute reconnaissance and covert tunneling commands within a controlled observation environment.
+This split alters the operational response. False alarms interact with an emulated service, so legitimate users face no connection drops. Malicious programs receive emulated command prompts and proceed to run discovery commands. Their tooling is thus recorded in an instrumented sandbox.
 
-We investigate two empirical research questions in this study:
-- **RQ1:** Can an ephemeral containerized sandbox capture interactive adversary telemetry while strictly bounding host memory, compute resources, and network egress risks under strict operational concurrency limits?
-- **RQ2:** How rapidly and reliably can interactive honeypot session events be transformed into verified MITRE ATT&CK technique tags and actionable Indicators of Compromise (IoCs) to accelerate subsequent detection cycles?
+This evaluation answers two practical research questions:
+- RQ1: Can a container sandbox capture interactive command telemetry while maintaining fixed memory ceilings, CPU allocations, and network boundaries under concurrency locks?
+- RQ2: How fast and accurately can raw session logs produce verified MITRE ATT&CK technique tags and new detection rules for earlier re-detection?
 
-This paper presents the formal specification, security boundaries, and empirical performance benchmarks of the MimicNet subsystem under controlled lab testbed conditions.
+This paper presents the formal specification, isolation mechanics, and empirical runtime measurements of the MimicNet subsystem under lab benchmark conditions.
 
 ---
 
 ## II. Related Work
-Honeypots and cyber deception systems have evolved from static decoy daemons into dynamic virtualization environments. Provos introduced Honeyd, demonstrating that virtual honeypots simulating multiple network topologies could profile unauthorized network scans at scale [1]. Cohen established the formal theoretical basis for cyber deception, showing that misleading attackers alters the economics of intrusions by forcing adversaries to expend resources verifying system authenticity [2]. Modern honeypots operate across varying interaction levels, ranging from low-interaction banner grabbers to high-interaction virtual machines [3].
+Honeypots have developed from early static shell listeners into dynamic virtualization systems. Provos designed Honeyd to demonstrate that simulated network topologies could log port scans and probe activity across unused subnets [1]. Cohen formalized deception in computer defense; deceptive environments force attackers to spend time verifying system authenticity [2]. Modern systems use varying interaction levels from simple port emulators to full virtual machines [3].
 
-Containerization has significantly reduced the deployment overhead of high-interaction decoys. Bui demonstrated that Linux containers provide lightweight isolation suitable for security testing, provided cgroups and namespace constraints prevent privilege escalation [5]. Al-Daeef et al. cataloged container sandbox escape vectors, emphasizing that unrestricted kernel capability sets, shared socket mounts, and writable root filesystems represent critical operational risks in container honeypots [6]. MimicNet incorporates these lessons by enforcing complete capability stripping (`CAP_DROP=ALL`), read-only root mounts, and disconnected network namespaces.
+Lightweight containerization lowered the compute requirements of honeypots. Bui evaluated container security boundaries and showed that cgroups and namespace restrictions prevent host compromise when properly applied [5]. Al-Daeef et al. cataloged container breakout methods. They identified broad kernel capabilities, writable filesystems, and mounted control sockets as the primary hazards in container honeypots [6]. MimicNet mitigates these risks: it drops all capabilities (`CAP_DROP=ALL`), mounts the root filesystem read-only, and detaches network namespaces.
 
-Standardizing post-compromise telemetry is essential for threat intelligence. Strom et al. designed the MITRE ATT&CK framework to catalog adversarial tactics, techniques, and procedures (TTPs) based on real-world observations [4]. Recent research by Krupski, Graniszewski, and Szczypiorski (StegShield) explored deceptive techniques specifically targeted at covert channel exfiltration [7]. Our work builds upon these foundations by coupling interactive session capture directly with automated, evidence-backed ATT&CK tagging and human-in-the-loop rule synthesis.
+Systematic threat categorization requires shared frameworks. Strom et al. built MITRE ATT&CK to index post-compromise adversary tactics based on public incident reports [4]. Krupski, Graniszewski, and Szczypiorski (StegShield) studied deception mechanisms focused on covert channels [7]. MimicNet extends this work by pairing emulated command execution with evidence-based ATT&CK tagging and analyst-approved rule extraction.
 
 ---
 
 ## III. Problem Statement
-Deploying automated deception mechanisms in enterprise environments introduces three primary engineering risks:
-1. **Host Compromise and Containment Failure:** If an adversary compromises the decoy service, unrestricted container environments could allow lateral network traversal or local kernel privilege escalation.
-2. **Resource Exhaustion (Denial of Service):** Spawning unconstrained virtualization instances for incoming security alerts can rapidly exhaust host CPU, memory, and process tables.
-3. **Automated Feedback Poisoning:** Automatically converting untrusted honeypot artifacts into operational firewall rules without analyst validation risks self-inflicted denial of service.
+Automated deception in enterprise environments faces three specific technical hurdles:
+1. Host Compromise: Poorly isolated decoys can give attackers a foothold for local privilege escalation or lateral network scanning.
+2. Resource Exhaustion: Spawning an unconstrained container for every alert risks exhausting host memory, CPU cores, and process tables.
+3. Feedback Poisoning: Auto-activating untrusted rules generated from honeypot data risks self-inflicted denial of service.
 
-MimicNet solves these challenges through strict isolation invariants, mutual-exclusion engagement locks, and an analyst-in-the-loop rule approval lifecycle. This paper benchmarks the computational latency, resource containment, technique mapping fidelity, and re-detection acceleration of the implemented MimicNet pipeline.
+MimicNet counters these hazards through strict namespace boundaries, a single-instance mutual exclusion lock, and an analyst-in-the-loop approval workflow. This study benchmarks the execution latency, memory boundaries, ATT&CK mapping accuracy, and re-detection latency of the system.
 
 ---
 
 ## IV. Methodology
 
 ### A. Deception Architecture and Sandbox Containment Model
-MimicNet operates as an event-driven response module downstream of the correlation gate. When an Alert reaches the `open` state, the backend invokes `engage` to initialize an observation environment.
+MimicNet acts as an event-driven response engine downstream of the correlation gate. When an Alert reaches the `open` state, the backend calls `engage` to spawn an isolated container.
 
 #### Container Boundary Rules and Resource Caps
-To eliminate escape and resource starvation risks, every container instance is configured with five mandatory operational constraints:
-- **Network Isolation:** Configured with `network_mode="none"`. The container possesses no external network interfaces, preventing outbound command-and-control, data exfiltration, or lateral network traversal.
-- **Memory Ceiling:** Memory consumption is strictly hard-capped at 128 MB (`mem_limit="128m"`). Any process attempting to allocate beyond this boundary triggers immediate container termination.
-- **CPU Quota:** Throttled to 0.5 logical cores (`nano_cpus=500000000`), preventing compute starvation of host detection pipelines.
-- **Capability Revocation:** All Linux kernel capabilities are completely dropped (`cap_drop=["ALL"]`). The container filesystem is mounted strictly read-only (`read_only=True`), preventing persistence mechanisms, binary drops, or filesystem tampering.
-- **Zero Host Mounts:** No host volumes, sockets (specifically `/var/run/docker.sock`), or sensitive paths are mounted into the container.
+To eliminate breakout and resource exhaustion hazards, each container runs under five static limits:
+- Network Isolation: Configured with `network_mode="none"`. The container has no network interfaces beyond loopback. This blocks outbound command-and-control, data exfiltration, and lateral scans.
+- Memory Boundary: Memory consumption is capped at 128 MB (`mem_limit="128m"`). The Linux kernel terminates any process attempting allocations beyond this ceiling.
+- CPU Quota: Throttled to 0.5 logical cores (`nano_cpus=500000000`) to protect host detection processes from starvation.
+- Capability Revocation: All kernel capabilities are stripped (`cap_drop=["ALL"]`). The container root filesystem is mounted read-only (`read_only=True`) to prevent file tampering and binary installation.
+- Mount Restrictions: No host directories, volumes, or control sockets (`/var/run/docker.sock`) enter the container.
 
 #### Concurrency Locks and Execution Lifecycles
-Host stability requires strict concurrency control. MimicNet implements a process-level mutual exclusion lock (`_running = threading.Lock()`). Exactly one container session may execute at any given time. Any secondary Alert arriving while a session is active is rejected with an `EngageBusy` exception.
+Single-host deployments require predictable resource boundaries. MimicNet implements an inter-process mutex (`_running = threading.Lock()`). Only one container can run at any given moment. Any incoming Alert during an active session is rejected with an `EngageBusy` error.
 
-Every session is protected by a 120-second watchdog timer (`max_life_s = 120`). If an attacker remains connected or stalls execution, the runtime forcefully issues `SIGKILL` to the container and appends a `timeout` record to the session log. In all execution paths (normal exit, timeout, or uncaught exception), a `finally` block executes `container.remove(force=True)`, guaranteeing that no orphaned containers or lingering state remain on the host.
+Each session includes a 120-second watchdog timer (`max_life_s = 120`). If an attacker halts or stays connected, the runtime sends a `SIGKILL` signal to the container and appends a `timeout` record to the session log. An exit `finally` block always executes `container.remove(force=True)`, so zero abandoned containers or lingering disk states remain behind.
 
 ### B. Interactive Emulation and Session Telemetry Capture
-Inside the sandbox, MimicNet executes an interactive shell emulator (`SshLikeShell`) written exclusively in standard Python libraries. This avoids external dependencies and permits identical execution in both containerized environments and in-process test harnesses.
+Inside the container, MimicNet runs an interactive shell script (`SshLikeShell`) written in standard Python. It uses no third-party libraries, which maintains identical behavior across in-process unit tests and real containers.
 
-The shell displays an authentic initial banner (`SSH-like service (lab honeypot, not SSH)`) and simulates common UNIX utility responses (`whoami`, `id`, `uname -a`, `pwd`, `ls`, `cat /etc/passwd`). Commands are logged as structured JSON objects containing timestamps, event types, and payload metadata:
-- `connect`: Records the remote attacker IP address, timestamp, and active service banner.
-- `command`: Captures the raw input string typed by the actor and the corresponding emulated stdout reply.
-- `disconnect`: Records clean termination via standard exit commands (`exit`, `logout`) or script exhaustion.
-- `timeout`: Appends an explicit timeout marker if the session reached the maximum duration limit.
+The shell displays an emulated banner (`SSH-like service (lab honeypot, not SSH)`) and returns canned output for standard UNIX discovery commands (`whoami`, `id`, `uname -a`, `pwd`, `ls`, `cat /etc/passwd`). Commands stream to stdout as JSON lines:
+- `connect`: Stores the attacker IP address, connection time, and service banner.
+- `command`: Logs the exact typed command string and the emulated output.
+- `disconnect`: Records session termination through `exit`, `logout`, or script completion.
+- `timeout`: Marks sessions terminated by the execution timer.
 
 ### C. Automated Threat Attribution and MITRE ATT&CK Mapping
-Upon session completion, the telemetry log is ingested by `tag_events()` in `eval/mitre.py`. The engine matches typed command strings against a curated mapping table verified against canonical definitions on `attack.mitre.org`:
-- **Strict Input Evaluation:** Keyword matching evaluates typed input command lines only. Honeypot output replies are ignored during matching, preventing false attributions.
-- **Evidence Formatting:** Every generated tag includes an explicit evidence string citing the matched keyword and verification date (e.g., `command matched user-discovery keyword 'whoami' [2026-11-14]`).
-- **Unverified Fallback:** Table entries lacking a verified date are marked `Unverified` in the evidence string.
-- **Zero Hallucination Guarantee:** Unrecognized commands, non-command events, or syntax errors produce no tags, eliminating synthetic false positives.
-- **Deduplication:** Each technique ID appears at most once per session summary.
+When a session concludes, `tag_events()` in `eval/mitre.py` parses the telemetry stream. The mapping table checks inputs against technique definitions verified on `attack.mitre.org`:
+- Strict Input Evaluation: The engine matches only typed commands. It ignores output text, which prevents false positive tags.
+- Evidence Documentation: Every tag records the matching keyword and verification date (for instance, `command matched user-discovery keyword 'whoami' [2026-11-14]`).
+- Unverified Marker: Entries without a verification date carry an `Unverified` tag in the log.
+- Zero Hallucination: Unrecognized commands, errors, and system events receive no tags.
+- Deduplication: Each technique ID appears once per session.
 
 ### D. Closed-Loop Threat Feed and Rule Synthesis Specification
-MimicNet transforms captured attacker artifacts into detection rules via `rules_from()`. The synthesis pipeline extracts two primary Indicator of Compromise (IoC) rule formats:
-1. **Source Address Rules:** Targets the network layer, capturing the attacker IP address (`match={"src_ip": attacker_ip}`).
-2. **Tunnel Domain Suffix Rules:** Scans executed commands for tunneling syntax (such as `iodine -f <domain>`) and extracts the targeted fully qualified domain name (`match={"qname_suffix": domain}`).
+MimicNet converts session artifacts into operational detection rules using `rules_from()`. The engine produces two rule types:
+1. Source Address Rules: Targets the network layer by matching the attacker IP (`match={"src_ip": attacker_ip}`).
+2. Tunnel Domain Suffix Rules: Parses command strings for DNS tunneling tools (such as `iodine -f <domain>`) to extract target domains (`match={"qname_suffix": domain}`).
 
-To maintain operational safety (ADR 0006), synthesized rules are created in the `proposed` state. Rules have no operational impact until an analyst inspects and approves them through the console interface. Upon approval, rules transition to `active` and are loaded directly into the CoverTrace detection module. A matching flow immediately produces a deterministic detection score of 1.0, bypassing multi-packet statistical accumulation.
+To maintain defensive safety (ADR 0006), synthesized rules default to the `proposed` state. Rules stay inactive until a security analyst inspects and accepts them via the web console. Approved rules become `active` and load into CoverTrace. A matching flow triggers an immediate detection score of 1.0 and bypasses multi-packet observation windows.
 
 ---
 
@@ -126,7 +126,7 @@ To maintain operational safety (ADR 0006), synthesized rules are created in the 
 ## VI. Results and Performance Evaluation
 
 ### A. Sandbox Lifecycle, Concurrency, and Resource Enforcement
-We benchmarked MimicNet across two execution paradigms: lightweight in-process emulation (`play()`) and fully isolated container execution (`engage()`). Table III summarizes latency, throughput, and resource containment over 500 independent trials.
+We benchmarked MimicNet across two execution modes: in-process shell execution (`play()`) and Docker container execution (`engage()`). Table III summarizes latency, memory, and concurrency metrics across 500 benchmark runs.
 
 ### TABLE III: RUNTIME BENCHMARK: IN-PROCESS VS. CONTAINERIZED ENGAGEMENT
 | Performance Metric | In-Process Emulation (`play()`) | Containerized Sandbox (`engage()`) | Operational Constraint |
@@ -140,25 +140,25 @@ We benchmarked MimicNet across two execution paradigms: lightweight in-process e
 | Concurrency Rejection Latency | < 0.001 ms | 0.0018 ms | Immediate `EngageBusy` rejection |
 | Cleanup Guarantee | 100.0% (in-memory GC) | 100.0% (0 orphaned containers) | Ephemeral resource cleanup |
 
-The empirical measurements confirm that in-process execution completes in under 0.04 ms, providing an ideal mechanism for continuous unit integration testing. Containerized execution incurs an average overhead of 618.40 ms, dominated by Docker daemon container creation and namespace configuration. Memory utilization remained well within the 128 MB boundary, averaging 18.25 MB under peak execution. When a concurrent alert arrived during an active session, the mutex lock rejected the request in 0.0018 ms, preventing host overload. Fig. 1 illustrates the comparative latency distributions across in-process and containerized lifecycle stages.
+In-process emulation finishes in under 0.04 ms, which provides a fast target for regression test suites. Containerized execution averages 618.40 ms, with most time spent on Docker daemon creation calls and namespace isolation. Peak memory remained low at 18.25 MB, well below the 128 MB limit. If a secondary alert arrives while a container runs, the mutex returns an error in 0.0018 ms to protect host throughput. Fig. 1 details the execution times across both environments.
 
 ![Fig. 1. Runtime latency breakdown comparing in-process emulation pipeline stages against full Docker container lifecycle.](eval/results/paper2_fig1_latency_breakdown.png)
 
 ### B. ATT&CK Attribution Fidelity and Evidence Verification
-Evaluating the automated mapping module across 500 runs demonstrated 100% precision and recall on verified commands. The scripted attacker sequence yielded six canonical MITRE ATT&CK technique tags (Table II).
+Testing the attribution module on 500 runs yielded consistent technique matching with zero false positives. The test script produced six verified technique tags (Table II).
 
-Crucially, the attribution engine successfully avoided false positives:
-- The `/bin/sh` string embedded in the emulated reply for `cat /etc/passwd` was correctly ignored, yielding no false assignment of technique T1059.004 (Unix Shell).
-- Synthetic unmapped commands (`frobnicate`, `zork --play-game`, `curl evil.com`) produced zero tags.
-- Non-command session events (`connect`, `disconnect`, `timeout`) generated zero tags.
-- MITRE tagging consumed an average of 0.0151 ms per session (standard deviation 0.0014 ms), introducing negligible processing overhead.
+Negative controls confirmed the specificity of the matcher:
+- The `/bin/sh` shell path in the `cat /etc/passwd` reply produced zero tags for T1059.004 because the matcher scans input commands only.
+- Unregistered inputs (`frobnicate`, `zork --play-game`, `curl evil.com`) generated zero tags.
+- System lifecycle events (`connect`, `disconnect`, `timeout`) produced zero tags.
+- Keyword matching required an average of 0.0151 ms per session.
 
-Fig. 3 confirms the mapping fidelity, showing 100% precision on verified techniques alongside complete rejection of negative controls.
+Fig. 3 shows technique precision across positive detections and negative control tests.
 
 ![Fig. 3. MITRE ATT&CK technique mapping coverage and zero-hallucination verification across positive commands and negative controls.](eval/results/paper2_fig3_mitre_mapping.png)
 
 ### C. Closed-Loop Feedback Acceleration: Statistical vs. Rule-Based Detection
-A central hypothesis of the Operation Cactus architecture is that automated rule synthesis accelerates threat re-detection compared to passive statistical classification. We evaluated detection latency on replayed DNS tunnel PCAPs before and after rule synthesis.
+Operation Cactus uses honeypot session data to speed up subsequent detections. We compared detection times on replayed PCAP files before and after loading synthesized rules.
 
 ### TABLE IV: CLOSED-LOOP DETECTION LATENCY AND RULE EXTRACTION METRICS
 | Evaluation Scenario | Detection Mechanism | Decision Basis | Detection Delay (Packets) | Detection Delay (Time) | Confidence Score |
@@ -168,41 +168,41 @@ A central hypothesis of the Operation Cactus architecture is that automated rule
 | **Closed-Loop Rule Hit (MimicNet)** | **CoverTrace Active Rule Table** | **Deterministic `qname_suffix` Match** | **1 packet** | **0.00 ms** | **1.0000 (deterministic)** |
 | **Closed-Loop IP Hit (MimicNet)** | **CoverTrace Active Rule Table** | **Deterministic `src_ip` Match** | **1 packet** | **0.00 ms** | **1.0000 (deterministic)** |
 
-As shown in Table IV, statistical detection requires observing traffic across a sliding temporal window (16 packets for DNS entropy; 24 packets for FlowSight flow cadence). In contrast, once an analyst approves a synthesized rule, CoverTrace flags matching traffic on the very first packet. Algorithmic detection delay drops from 14.20 seconds down to 0.00 ms, converting a slow covert channel into an immediate deterministic alert. Fig. 2 plots the packet and temporal reductions achieved by closed-loop feedback.
+Statistical scoring requires collecting packets over temporal windows: 16 packets for DNS entropy and 24 packets for FlowSight burst tracking. When an analyst promotes an extracted rule to active status, CoverTrace flags matching flows on the very first packet. Delay drops from 14.20 seconds to 0.00 ms. This converts statistical anomaly detection into deterministic rule hits. Fig. 2 illustrates this reduction in detection latency.
 
 ![Fig. 2. Closed-loop re-detection delay acceleration comparing multi-packet statistical windows against immediate deterministic rule hits.](eval/results/paper2_fig2_detection_acceleration.png)
 
 ### D. Ablation Analysis & Deception Fingerprint Resilience
-We conducted ablation tests on deception components to evaluate system resilience:
-1. **Watchdog Timeout Ablation:** When the attacker script omitted an exit command, the unconstrained shell remained connected indefinitely. Re-enabling the 120-second watchdog successfully issued `SIGKILL` and cleanly logged the session with a `timeout` event in 100% of trials.
-2. **Banner Variation:** Exposing a fixed, static service banner enables attackers to profile the honeypot using automated network scanners. Implementing a seeded three-way banner selection cycle disrupted signature-based honeypot detection tools without modifying internal command parsing.
-3. **Analyst Gate Ablation:** Bypassing analyst approval to automatically activate synthesized rules led to a simulated rule conflict when a benign web domain was introduced. Requiring explicit analyst approval prevented rule poisoning while maintaining a rapid synthesis-to-deployment workflow.
+We evaluated individual deception controls through ablation tests:
+1. Watchdog Timer Ablation: Removing the timer let stalled shells run indefinitely. Restoring the 120-second watchdog triggered `SIGKILL` and logged a `timeout` event in every run.
+2. Banner Variation: Static service banners allow scanners to identify honeypots quickly. Rotating across three seeded banners varied service fingerprints while keeping command parsing stable.
+3. Analyst Gate Ablation: Bypassing analyst approval allowed a test rule with a common web domain to activate automatically and trigger false alarms. Retaining the approval gate stopped rule conflicts while keeping rule generation fast.
 
 ### E. Uncertainty Quantification: Repeated Seeds
-Across 10 distinct random seeds (seeds 42 through 51) controlling testbed jitter and session timing, performance remained consistent:
+Across 10 random seeds (seeds 42 to 51) controlling network jitter and timestamps, performance remained stable:
 - In-process execution latency: $0.0392 \pm 0.0078$ ms.
 - MITRE ATT&CK mapping latency: $0.0151 \pm 0.0014$ ms.
-- Proposed rule synthesis latency: $0.0053 \pm 0.0007$ ms.
-- Combined pipeline processing overhead: $0.0544 \pm 0.0085$ ms.
-- Sandbox container teardown success rate: 100.0% (500 out of 500 containers destroyed).
+- Candidate rule synthesis latency: $0.0053 \pm 0.0007$ ms.
+- Combined pipeline processing time: $0.0544 \pm 0.0085$ ms.
+- Container cleanup success rate: 100.0% (500 out of 500 containers destroyed).
 
 ### F. Threats to Validity
-Several experimental limitations apply to this evaluation:
-- **Synthetic Scripted Attacker:** In compliance with ethical research guidelines and team safety protocols, tests utilized scripted adversary sequences instead of live external hackers. While the commands mirror standard offensive tradecraft (`whoami`, `uname`, `iodine`), sophisticated human adversaries may attempt atypical shell escapes or timing probes.
-- **Single-Host Scalability:** MimicNet enforces a strict concurrency ceiling of one container per host. While this prevents host resource exhaustion, an adversary coordinating distributed attacks across hundreds of endpoints would cause secondary alerts to receive `EngageBusy` rejections.
-- **Service Emulation Scope:** The current shell emulator models POSIX shell commands and SSH banners. Protocols like SMB, RDP, or HTTP web shells are not currently supported.
+Three constraints apply to these experimental results:
+- Scripted Adversary Sequences: Tests used automated command scripts instead of human adversaries. Real attackers may use alternative shell escapes or subtle timing checks.
+- Single-Container Limit: The single-instance lock prevents resource starvation, but distributed attacks across multiple endpoints will see secondary sessions rejected with `EngageBusy`.
+- Emulation Boundaries: The shell supports common POSIX and SSH commands. Web shells, database protocols, and SMB sessions are currently outside its scope.
 
 ### G. Interpretation and Operational Trade-offs
-The benchmark results establish that active deception does not require heavy, complex virtualization infrastructure. By constraining the honeypot to a 128 MB container with no network access, MimicNet eliminates operational liability while gathering high-fidelity threat intelligence.
+These benchmarks show that high-interaction deception does not require heavy hypervisor infrastructure. Setting strict 128 MB RAM limits and detaching network namespaces removes host risks while capturing clean command logs.
 
-Furthermore, diverting flagged traffic into a honeypot provides an operational safety net for detection thresholds. Because false positives do not result in dropped user connections, security teams can tune detection modules toward higher sensitivity without increasing help-desk ticket volumes.
+Diverting suspect traffic into decoys also softens detection trade-offs. Because false alarms do not terminate active sessions, engineering teams can lower detection thresholds without triggering service outages for valid users.
 
 ---
 
 ## VII. Conclusion and Future Work
-This paper presents the formal specification, containment model, and performance evaluation of MimicNet, the active deception subsystem of Operation Cactus. By combining strict container constraints (`network_mode="none"`, 128 MB RAM ceiling, 0.5 CPU quota, complete capability dropping) with lightweight shell emulation, MimicNet captures adversary command sequences without compromising host safety. The integrated attribution engine maps session events to verified MITRE ATT&CK techniques in 0.0151 ms with zero false attribution on unmapped inputs. Closed-loop rule synthesis converts observed artifacts into proposed detection filters, cutting re-detection latency from multi-packet sliding statistical windows down to single-packet deterministic matching (0 ms delay).
+This paper evaluates the architecture, containment rules, and telemetry pipeline of MimicNet. Combining strict container restrictions (`network_mode="none"`, 128 MB RAM cap, 0.5 CPU quota, dropped capabilities) with shell emulation captures adversary activity safely. The keyword parser maps commands to MITRE ATT&CK techniques in 0.0151 ms with zero false attribution on negative controls. Analyst-reviewed rule generation turns session data into CoverTrace filters. This cuts re-detection delay from sliding statistical windows down to single-packet matches (0 ms algorithmic delay).
 
-Future work in Phase II will expand MimicNet to support multi-protocol emulation (HTTP, DNS responders), investigate dynamic deception banner randomization against advanced scanner fingerprinting, and integrate live container telemetry directly into the React-based security dashboard.
+Phase II development will add web and DNS protocol handlers, dynamic banner randomization against automated profiling tools, and telemetry streaming into the central web dashboard.
 
 ---
 
@@ -221,4 +221,4 @@ Future work in Phase II will expand MimicNet to support multi-protocol emulation
 
 [7] J. Krupski, W. Graniszewski, and K. Szczypiorski, "StegShield: Information Hiding Detection Using Deceptive Techniques," *IEEE Transactions on Information Forensics and Security*, vol. 16, pp. 3201–3214, 2021.
 
-[8] A. Rathod, S. Khan, S. Tripathi, B. Moray, G. Deepak, and S. Ranjan, "Operation Cactus: Behavioral Traffic Analysis and Covert Channel Detection for Encrypted Network Threats," in *Proc. Baseline Benchmark Review*, Bengaluru, India, 2026.
+[8] A. Rathod, S. Khan, S. Tripathi, B. Moray, Gerard Deepak, and S. Ranjan, "Operation Cactus: Behavioral Traffic Analysis and Covert Channel Detection for Encrypted Network Threats," in *Proc. Baseline Benchmark Review*, Bengaluru, India, 2026.

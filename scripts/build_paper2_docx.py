@@ -1,17 +1,19 @@
 """Build publication-grade IEEE two-column Paper 2 document for MimicNet.
 
 Follows the publication-grade IEEE 4-section layout:
-- Section 0: Title, Subtitle, Author Block (1-column full page width)
+- Section 0: Title, Subtitle, Author Block (1-column full page width, borderless grid)
 - Section 1: Abstract, Index Terms, Sections I-IV (2-column IEEE format)
 - Section 2: Section V, Tables I-II, Section VI.A-C, Tables III-IV, Figures 1-3 (1-column full page width for wide tables & figures)
 - Section 3: Section VI Subsections D-G, Section VII Conclusion, References (2-column IEEE format)
 
 Ensures:
 - Times New Roman throughout
+- Zero newlines inside justified paragraphs (completely eliminates stretched whitespace gaps)
+- Dedicated indented list paragraphs
 - Zero table row splits (<w:cantSplit/> on all rows)
 - Tables stay completely on one page (atomic keep_with_next binding)
 - High-resolution figures embedded (300 DPI)
-- Clean IEEE borders and padding
+- Clean IEEE borders and cell padding
 """
 
 from __future__ import annotations
@@ -41,7 +43,7 @@ TARGET_DOCX = DOCS_PAPER / "Operation_Cactus_Paper2_MimicNet.docx"
 DESKTOP_DOCX = DESKTOP / "Operation_Cactus_Paper2_MimicNet.docx"
 
 
-def set_cell_margins(cell, top=50, bottom=50, left=70, right=70):
+def set_cell_margins(cell, top=45, bottom=45, left=65, right=65):
     """Set explicit padding inside a table cell (in dxa: 20 dxa = 1 pt)."""
     tcPr = cell._tc.get_or_add_tcPr()
     tcMar = OxmlElement("w:tcMar")
@@ -112,11 +114,12 @@ def add_p(
     text: str = "",
     align=WD_ALIGN_PARAGRAPH.JUSTIFY,
     space_before_pt=0,
-    space_after_pt=4,
-    line_spacing=1.0,
+    space_after_pt=3.5,
+    line_spacing=1.05,
     bold=False,
     italic=False,
     font_size_pt=10.0,
+    left_indent_in=0.0,
     keep_with_next=False,
 ):
     p = doc.add_paragraph()
@@ -126,6 +129,8 @@ def add_p(
     pf.space_after = Pt(space_after_pt)
     pf.line_spacing = line_spacing
     pf.keep_with_next = keep_with_next
+    if left_indent_in > 0:
+        pf.left_indent = Inches(left_indent_in)
 
     if text:
         run = p.add_run(text)
@@ -137,13 +142,35 @@ def add_p(
     return p
 
 
+def add_bullet(doc: Document, prefix: str, text: str):
+    p = doc.add_paragraph()
+    p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+    pf = p.paragraph_format
+    pf.space_before = Pt(1.0)
+    pf.space_after = Pt(2.0)
+    pf.line_spacing = 1.05
+    pf.left_indent = Inches(0.18)
+
+    r_pre = p.add_run(prefix + " ")
+    r_pre.bold = True
+    r_pre.font.name = "Times New Roman"
+    r_pre.font.size = Pt(9.5)
+    r_pre.font.color.rgb = RGBColor(0x00, 0x00, 0x00)
+
+    r_body = p.add_run(text)
+    r_body.font.name = "Times New Roman"
+    r_body.font.size = Pt(9.5)
+    r_body.font.color.rgb = RGBColor(0x00, 0x00, 0x00)
+    return p
+
+
 def add_heading_1(doc: Document, text: str):
     p = add_p(
         doc,
         text=text,
         align=WD_ALIGN_PARAGRAPH.CENTER,
-        space_before_pt=10,
-        space_after_pt=3,
+        space_before_pt=8,
+        space_after_pt=2.5,
         bold=True,
         font_size_pt=10.0,
         keep_with_next=True,
@@ -157,7 +184,7 @@ def add_heading_2(doc: Document, text: str):
         doc,
         text=text,
         align=WD_ALIGN_PARAGRAPH.LEFT,
-        space_before_pt=7,
+        space_before_pt=6,
         space_after_pt=2,
         bold=True,
         font_size_pt=10.0,
@@ -170,8 +197,8 @@ def add_heading_3(doc: Document, text: str):
         doc,
         text=text,
         align=WD_ALIGN_PARAGRAPH.LEFT,
-        space_before_pt=5,
-        space_after_pt=2,
+        space_before_pt=4,
+        space_after_pt=1.5,
         italic=True,
         font_size_pt=10.0,
         keep_with_next=True,
@@ -179,7 +206,7 @@ def add_heading_3(doc: Document, text: str):
 
 
 def format_table(table, col_widths, col_alignments, header_bg="F0F4F8"):
-    """Format table with IEEE borders, cantSplit on all rows, and keep_with_next to ensure it stays on one page."""
+    """Format table with IEEE borders, cantSplit on all rows, and keep_with_next to guarantee it stays on one page."""
     set_table_ieee_borders(table)
     table.alignment = WD_TABLE_ALIGNMENT.CENTER
 
@@ -193,20 +220,19 @@ def format_table(table, col_widths, col_alignments, header_bg="F0F4F8"):
         if is_header:
             trPr.append(parse_xml(f"<w:tblHeader {nsdecls('w')}/>"))
 
-        # Keep all rows except the last row bound to the next row so the table never splits across pages
         is_not_last_row = row_idx < total_rows - 1
 
         for col_idx, cell in enumerate(row.cells):
             cell.width = col_widths[col_idx]
-            set_cell_margins(cell, top=45, bottom=45, left=65, right=65)
+            set_cell_margins(cell, top=40, bottom=40, left=60, right=60)
 
             if is_header:
                 set_cell_shading(cell, header_bg)
 
             for p in cell.paragraphs:
                 p.alignment = col_alignments[col_idx]
-                p.paragraph_format.space_before = Pt(2)
-                p.paragraph_format.space_after = Pt(2)
+                p.paragraph_format.space_before = Pt(1.5)
+                p.paragraph_format.space_after = Pt(1.5)
                 p.paragraph_format.line_spacing = 1.0
                 p.paragraph_format.keep_with_next = is_not_last_row
                 for run in p.runs:
@@ -217,20 +243,20 @@ def format_table(table, col_widths, col_alignments, header_bg="F0F4F8"):
 
 
 def add_figure(doc: Document, img_path: Path, caption_text: str, width_in: float = 6.2):
-    """Add a centered high-resolution figure with caption."""
+    """Add centered high-resolution figure with caption."""
     if not img_path.exists():
         return
     p_img = doc.add_paragraph()
     p_img.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    p_img.paragraph_format.space_before = Pt(8)
-    p_img.paragraph_format.space_after = Pt(2)
+    p_img.paragraph_format.space_before = Pt(6)
+    p_img.paragraph_format.space_after = Pt(1)
     p_img.paragraph_format.keep_with_next = True
     p_img.add_run().add_picture(str(img_path), width=Inches(width_in))
 
     p_cap = doc.add_paragraph()
     p_cap.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    p_cap.paragraph_format.space_before = Pt(2)
-    p_cap.paragraph_format.space_after = Pt(8)
+    p_cap.paragraph_format.space_before = Pt(1)
+    p_cap.paragraph_format.space_after = Pt(6)
     p_cap.paragraph_format.keep_with_next = False
     r = p_cap.add_run(caption_text)
     r.font.name = "Times New Roman"
@@ -248,7 +274,7 @@ def build_paper2_doc():
     normal_style.font.color.rgb = RGBColor(0, 0, 0)
 
     # =========================================================================
-    # SECTION 0: Title, Subtitle, Author Block Table (1 Column)
+    # SECTION 0: Title, Subtitle, Author Block (1 Column, Borderless Grid)
     # =========================================================================
     sec0 = doc.sections[0]
     apply_section_page_setup(sec0, is_continuous=False)
@@ -260,9 +286,9 @@ def build_paper2_doc():
         text="Operation Cactus: Active Deception, Interactive Session Telemetry, and Closed-Loop Threat Feed Synthesis for Covert Network Exfiltration",
         align=WD_ALIGN_PARAGRAPH.CENTER,
         space_before_pt=0,
-        space_after_pt=6,
+        space_after_pt=4,
         bold=True,
-        font_size_pt=20.0,
+        font_size_pt=18.0,
         keep_with_next=True,
     )
 
@@ -272,13 +298,13 @@ def build_paper2_doc():
         text="An Empirical Evaluation of the MimicNet Deception Architecture, Container Isolation Constraints, and MITRE ATT&CK Mapping",
         align=WD_ALIGN_PARAGRAPH.CENTER,
         space_before_pt=0,
-        space_after_pt=10,
+        space_after_pt=8,
         italic=True,
         font_size_pt=10.5,
         keep_with_next=True,
     )
 
-    # Author Block: Exact IEEE 2x3 Table Matching Paper 1
+    # Author Block: Borderless 2x3 Grid Matching Paper 1
     authors_data = [
         [
             (
@@ -343,16 +369,17 @@ def build_paper2_doc():
             trPr.append(parse_xml(f"<w:cantSplit {nsdecls('w')}/>"))
 
         is_not_last_row_auth = r_idx < len(t_auth.rows) - 1
+
         for c_idx, cell in enumerate(row.cells):
             cell.width = Inches(2.25)
-            set_cell_margins(cell, top=40, bottom=40, left=40, right=40)
+            set_cell_margins(cell, top=30, bottom=30, left=35, right=35)
             name, dept, college, city = authors_data[r_idx][c_idx]
 
             # Paragraph 0: Name
             p0 = cell.paragraphs[0]
             p0.alignment = WD_ALIGN_PARAGRAPH.CENTER
             p0.paragraph_format.space_before = Pt(0)
-            p0.paragraph_format.space_after = Pt(2)
+            p0.paragraph_format.space_after = Pt(1.5)
             p0.paragraph_format.line_spacing = 1.0
             p0.paragraph_format.keep_with_next = is_not_last_row_auth
             r0 = p0.add_run(name)
@@ -364,7 +391,7 @@ def build_paper2_doc():
             p1 = cell.add_paragraph()
             p1.alignment = WD_ALIGN_PARAGRAPH.CENTER
             p1.paragraph_format.space_before = Pt(0)
-            p1.paragraph_format.space_after = Pt(1)
+            p1.paragraph_format.space_after = Pt(1.0)
             p1.paragraph_format.line_spacing = 1.0
             p1.paragraph_format.keep_with_next = is_not_last_row_auth
             r1 = p1.add_run(dept)
@@ -376,7 +403,7 @@ def build_paper2_doc():
             p2 = cell.add_paragraph()
             p2.alignment = WD_ALIGN_PARAGRAPH.CENTER
             p2.paragraph_format.space_before = Pt(0)
-            p2.paragraph_format.space_after = Pt(1)
+            p2.paragraph_format.space_after = Pt(1.0)
             p2.paragraph_format.line_spacing = 1.0
             p2.paragraph_format.keep_with_next = is_not_last_row_auth
             r2 = p2.add_run(college)
@@ -388,15 +415,13 @@ def build_paper2_doc():
             p3 = cell.add_paragraph()
             p3.alignment = WD_ALIGN_PARAGRAPH.CENTER
             p3.paragraph_format.space_before = Pt(0)
-            p3.paragraph_format.space_after = Pt(8)
+            p3.paragraph_format.space_after = Pt(6)
             p3.paragraph_format.line_spacing = 1.0
             p3.paragraph_format.keep_with_next = is_not_last_row_auth
             r3 = p3.add_run(city)
             r3.italic = True
             r3.font.name = "Times New Roman"
             r3.font.size = Pt(8.5)
-
-    add_p(doc, "", space_before_pt=0, space_after_pt=4)
 
     # =========================================================================
     # SECTION 1: Abstract, Index Terms, Sections I-IV (2 Columns)
@@ -409,8 +434,8 @@ def build_paper2_doc():
     p_abs = doc.add_paragraph()
     p_abs.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
     p_abs.paragraph_format.space_before = Pt(0)
-    p_abs.paragraph_format.space_after = Pt(4)
-    p_abs.paragraph_format.line_spacing = 1.0
+    p_abs.paragraph_format.space_after = Pt(3.5)
+    p_abs.paragraph_format.line_spacing = 1.05
 
     r_ab_pre = p_abs.add_run("Abstract—")
     r_ab_pre.bold = True
@@ -418,24 +443,20 @@ def build_paper2_doc():
     r_ab_pre.font.size = Pt(9.0)
 
     abstract_text = (
-        "Operation Cactus pairs passive traffic analysis with an active deception subsystem, MimicNet, to contain "
-        "and profile covert exfiltration sessions that bypass traditional perimeter defenses. When the detection pipeline "
-        "flags an anomalous entity, MimicNet engages the suspect connection by spawning an isolated, ephemeral sandbox "
-        "environment. This paper evaluates the architectural containment, runtime performance, and closed-loop threat "
-        "feed synthesis of the MimicNet response engine. The sandbox enforces strict isolation boundaries: zero external "
-        'network egress (network_mode="none"), an absolute 128 MB memory limit, a 0.5 CPU quota, complete Linux capability '
-        'revocation (cap_drop=["ALL"]), and a 120-second hard watchdog timer. We evaluate session telemetry across 500 '
-        "benchmark runs of a scripted reconnaissance and DNS tunneling trace modeled on standard post-compromise activity "
-        "(whoami, uname -a, cat /etc/passwd, iodine -f t.example.test). The in-process shell emulator processes the complete "
-        "interactive dialogue in an average of 0.0392 ms (standard deviation 0.0078 ms), while an automated keyword extraction "
-        "engine maps typed commands to canonical MITRE ATT&CK enterprise techniques in 0.0151 ms with zero false attribution "
-        "on unmapped inputs. From completed sessions, MimicNet synthesizes candidate detection rules in 0.0053 ms. Under a "
-        "human-in-the-loop governance model, analyst approval promotes these rules into active CoverTrace filters, cutting "
-        "re-detection latency from multi-packet sliding statistical windows down to immediate single-packet deterministic "
-        "matching (0 ms algorithmic delay). Mutual exclusion locking prevents resource starvation by restricting active "
-        "sandboxes to one per host, rejecting concurrent alerts within 0.002 ms. These empirical findings demonstrate that "
-        "lightweight, resource-bounded container deception captures vital post-compromise intelligence without risking host "
-        "stability or pipeline throughput."
+        "Operation Cactus connects passive flow analysis with an active deception module, MimicNet, to inspect covert "
+        "network exfiltration when payload encryption blocks deep packet inspection. Once the detection pipeline raises an "
+        "alert on an entity, MimicNet redirects the session into an emulated, short-lived sandbox. This benchmark measures "
+        "the containment boundaries, runtime overhead, and threat intelligence synthesis of the response engine. The sandbox "
+        'enforces five invariants: zero external network routing (network_mode="none"), a 128 MB RAM ceiling, a 0.5 CPU quota, '
+        'complete Linux capability dropping (cap_drop=["ALL"]), and a 120-second execution timer. Over 500 test trials on a '
+        "scripted adversary trace (whoami, uname -a, cat /etc/passwd, iodine -f t.example.test), the Python shell emulator "
+        "processes the interactive session in an average of 0.0392 ms (standard deviation 0.0078 ms). An automated keyword "
+        "matcher extracts canonical MITRE ATT&CK techniques in 0.0151 ms with zero false attribution on negative controls. "
+        "MimicNet then extracts candidate detection rules from session logs in 0.0053 ms. Under human analyst review, an "
+        "approved candidate rule enters CoverTrace. This drops re-detection delay from sliding statistical windows down to "
+        "immediate single-packet matching (0 ms algorithmic delay). An inter-process mutex limits active sandboxes to one per "
+        "host; concurrent alerts receive an EngageBusy rejection in 0.0018 ms. These benchmarks show that constrained container "
+        "deception captures threat telemetry without compromising host stability or throughput."
     )
     r_ab_body = p_abs.add_run(abstract_text)
     r_ab_body.bold = True
@@ -447,8 +468,8 @@ def build_paper2_doc():
     p_idx = doc.add_paragraph()
     p_idx.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
     p_idx.paragraph_format.space_before = Pt(0)
-    p_idx.paragraph_format.space_after = Pt(8)
-    p_idx.paragraph_format.line_spacing = 1.0
+    p_idx.paragraph_format.space_after = Pt(6)
+    p_idx.paragraph_format.line_spacing = 1.05
 
     r_idx_pre = p_idx.add_run("Index Terms—")
     r_idx_pre.bold = True
@@ -466,174 +487,220 @@ def build_paper2_doc():
     add_heading_1(doc, "I. Introduction")
     add_p(
         doc,
-        "Perimeter network defenses traditionally rely on dropping or resetting suspicious connections. While immediate "
-        "blocking prevents direct data transfer, it provides security analysts with zero visibility into adversary intent, "
-        "operational tools, or subsequent compromise stages. Furthermore, in environments where transport-layer encryption "
-        "conceals application payloads, initial detection signals frequently carry operational uncertainty. Severing "
-        "connections based solely on statistical anomalies risks disrupting legitimate business workflows.",
+        "Network security teams generally react to intrusions by dropping packets or resetting TCP handshakes. Outright termination "
+        "stops the active connection, but it reveals nothing about who is attacking or what software they planned to execute. In "
+        "networks secured by transport-layer encryption, detection models must make decisions on noisy metadata. Severing connections "
+        "based on probabilistic thresholds alone disrupts legitimate enterprise traffic.",
+    )
+    add_p(doc, "Operation Cactus implements a two-stage response structure:")
+    add_bullet(
+        doc,
+        "1. Detection Middleware (FlowSight and CoverTrace):",
+        "Evaluates flow statistics and protocol-level covert channel indicators without decrypting payloads [8].",
+    )
+    add_bullet(
+        doc,
+        "2. Deception Response Layer (MimicNet):",
+        "Routes flagged connections into an isolated honeypot container instead of closing the TCP socket.",
     )
     add_p(
         doc,
-        "Operation Cactus addresses this operational dilemma through an integrated two-stage defensive architecture:\n"
-        "1. Detection Middleware (FlowSight and CoverTrace): Monitors passive flow statistics and protocol-level covert "
-        "channel indicators without inspecting encrypted payloads, as established in our initial baseline study [8].\n"
-        "2. Deception Response Layer (MimicNet): Dynamically redirects suspicious sessions into a locked-down, interactive "
-        "decoy container instead of terminating the connection.",
+        "This split alters the operational response. False alarms interact with an emulated service, so legitimate users face no "
+        "connection drops. Malicious programs receive emulated command prompts and proceed to run discovery commands. Their tooling "
+        "is thus recorded in an instrumented sandbox.",
+    )
+    add_p(doc, "This evaluation answers two practical research questions:")
+    add_bullet(
+        doc,
+        "RQ1:",
+        "Can a container sandbox capture interactive command telemetry while maintaining fixed memory ceilings, CPU allocations, and network boundaries under concurrency locks?",
+    )
+    add_bullet(
+        doc,
+        "RQ2:",
+        "How fast and accurately can raw session logs produce verified MITRE ATT&CK technique tags and new detection rules for earlier re-detection?",
     )
     add_p(
         doc,
-        "This architecture changes the defensive calculus. Benign sessions flagged by false positives interact with an "
-        "emulated service without data loss or terminal disruption. Malicious actors, conversely, believe their compromise "
-        "succeeded and proceed to execute reconnaissance and covert tunneling commands within a controlled observation environment.",
-    )
-    add_p(
-        doc,
-        "We investigate two empirical research questions in this study:\n"
-        "- RQ1: Can an ephemeral containerized sandbox capture interactive adversary telemetry while strictly bounding host "
-        "memory, compute resources, and network egress risks under strict operational concurrency limits?\n"
-        "- RQ2: How rapidly and reliably can interactive honeypot session events be transformed into verified MITRE ATT&CK "
-        "technique tags and actionable Indicators of Compromise (IoCs) to accelerate subsequent detection cycles?",
-    )
-    add_p(
-        doc,
-        "This paper presents the formal specification, security boundaries, and empirical performance benchmarks of the "
-        "MimicNet subsystem under controlled lab testbed conditions.",
+        "This paper presents the formal specification, isolation mechanics, and empirical runtime measurements of the MimicNet "
+        "subsystem under lab benchmark conditions.",
     )
 
     # II. RELATED WORK
     add_heading_1(doc, "II. Related Work")
     add_p(
         doc,
-        "Honeypots and cyber deception systems have evolved from static decoy daemons into dynamic virtualization environments. "
-        "Provos introduced Honeyd, demonstrating that virtual honeypots simulating multiple network topologies could profile "
-        "unauthorized network scans at scale [1]. Cohen established the formal theoretical basis for cyber deception, showing "
-        "that misleading attackers alters the economics of intrusions by forcing adversaries to expend resources verifying "
-        "system authenticity [2]. Modern honeypots operate across varying interaction levels, ranging from low-interaction "
-        "banner grabbers to high-interaction virtual machines [3].",
+        "Honeypots have developed from early static shell listeners into dynamic virtualization systems. Provos designed Honeyd to "
+        "demonstrate that simulated network topologies could log port scans and probe activity across unused subnets [1]. Cohen formalized "
+        "deception in computer defense; deceptive environments force attackers to spend time verifying system authenticity [2]. Modern "
+        "systems use varying interaction levels from simple port emulators to full virtual machines [3].",
     )
     add_p(
         doc,
-        "Containerization has significantly reduced the deployment overhead of high-interaction decoys. Bui demonstrated that "
-        "Linux containers provide lightweight isolation suitable for security testing, provided cgroups and namespace "
-        "constraints prevent privilege escalation [5]. Al-Daeef et al. cataloged container sandbox escape vectors, emphasizing "
-        "that unrestricted kernel capability sets, shared socket mounts, and writable root filesystems represent critical "
-        "operational risks in container honeypots [6]. MimicNet incorporates these lessons by enforcing complete capability "
-        "stripping (CAP_DROP=ALL), read-only root mounts, and disconnected network namespaces.",
+        "Lightweight containerization lowered the compute requirements of honeypots. Bui evaluated container security boundaries and showed "
+        "that cgroups and namespace restrictions prevent host compromise when properly applied [5]. Al-Daeef et al. cataloged container "
+        "breakout methods. They identified broad kernel capabilities, writable filesystems, and mounted control sockets as the primary hazards "
+        "in container honeypots [6]. MimicNet mitigates these risks: it drops all capabilities (CAP_DROP=ALL), mounts the root filesystem "
+        "read-only, and detaches network namespaces.",
     )
     add_p(
         doc,
-        "Standardizing post-compromise telemetry is essential for threat intelligence. Strom et al. designed the MITRE ATT&CK "
-        "framework to catalog adversarial tactics, techniques, and procedures (TTPs) based on real-world observations [4]. "
-        "Recent research by Krupski, Graniszewski, and Szczypiorski (StegShield) explored deceptive techniques specifically "
-        "targeted at covert channel exfiltration [7]. Our work builds upon these foundations by coupling interactive session "
-        "capture directly with automated, evidence-backed ATT&CK tagging and human-in-the-loop rule synthesis.",
+        "Systematic threat categorization requires shared frameworks. Strom et al. built MITRE ATT&CK to index post-compromise adversary "
+        "tactics based on public incident reports [4]. Krupski, Graniszewski, and Szczypiorski (StegShield) studied deception mechanisms "
+        "focused on covert channels [7]. MimicNet extends this work by pairing emulated command execution with evidence-based ATT&CK tagging "
+        "and analyst-approved rule extraction.",
     )
 
     # III. PROBLEM STATEMENT
     add_heading_1(doc, "III. Problem Statement")
     add_p(
         doc,
-        "Deploying automated deception mechanisms in enterprise environments introduces three primary engineering risks:\n"
-        "1. Host Compromise and Containment Failure: If an adversary compromises the decoy service, unrestricted container "
-        "environments could allow lateral network traversal or local kernel privilege escalation.\n"
-        "2. Resource Exhaustion (Denial of Service): Spawning unconstrained virtualization instances for incoming security "
-        "alerts can rapidly exhaust host CPU, memory, and process tables.\n"
-        "3. Automated Feedback Poisoning: Automatically converting untrusted honeypot artifacts into operational firewall rules "
-        "without analyst validation risks self-inflicted denial of service.",
+        "Automated deception in enterprise environments faces three specific technical hurdles:",
+    )
+    add_bullet(
+        doc,
+        "1. Host Compromise:",
+        "Poorly isolated decoys can give attackers a foothold for local privilege escalation or lateral network scanning.",
+    )
+    add_bullet(
+        doc,
+        "2. Resource Exhaustion:",
+        "Spawning an unconstrained container for every alert risks exhausting host memory, CPU cores, and process tables.",
+    )
+    add_bullet(
+        doc,
+        "3. Feedback Poisoning:",
+        "Auto-activating untrusted rules generated from honeypot data risks self-inflicted denial of service.",
     )
     add_p(
         doc,
-        "MimicNet solves these challenges through strict isolation invariants, mutual-exclusion engagement locks, and an "
-        "analyst-in-the-loop rule approval lifecycle. This paper benchmarks the computational latency, resource containment, "
-        "technique mapping fidelity, and re-detection acceleration of the implemented MimicNet pipeline.",
+        "MimicNet counters these hazards through strict namespace boundaries, a single-instance mutual exclusion lock, and an analyst-in-the-loop "
+        "approval workflow. This study benchmarks the execution latency, memory boundaries, ATT&CK mapping accuracy, and re-detection latency of the system.",
     )
 
     # IV. METHODOLOGY
     add_heading_1(doc, "IV. Methodology")
     add_p(
         doc,
-        "MimicNet operates as an event-driven response module downstream of the correlation gate. When an Alert reaches "
-        "the open state, the backend invokes engage to initialize an observation environment.",
+        "MimicNet acts as an event-driven response engine downstream of the correlation gate. When an Alert reaches the open state, the backend "
+        "calls engage to spawn an isolated container.",
     )
 
     add_heading_2(doc, "A. Deception Architecture and Sandbox Containment Model")
     add_heading_3(doc, "Container Boundary Rules and Resource Caps")
     add_p(
         doc,
-        "To eliminate escape and resource starvation risks, every container instance is configured with five mandatory "
-        "operational constraints:\n"
-        '- Network Isolation: Configured with network_mode="none". The container possesses no external network interfaces, '
-        "preventing outbound command-and-control, data exfiltration, or lateral network traversal.\n"
-        '- Memory Ceiling: Memory consumption is strictly hard-capped at 128 MB (mem_limit="128m"). Any process attempting '
-        "to allocate beyond this boundary triggers immediate container termination.\n"
-        "- CPU Quota: Throttled to 0.5 logical cores (nano_cpus=500000000), preventing compute starvation of host detection pipelines.\n"
-        '- Capability Revocation: All Linux kernel capabilities are completely dropped (cap_drop=["ALL"]). The container '
-        "filesystem is mounted strictly read-only (read_only=True), preventing persistence mechanisms, binary drops, or filesystem tampering.\n"
-        "- Zero Host Mounts: No host volumes, sockets (specifically /var/run/docker.sock), or sensitive paths are mounted into the container.",
+        "To eliminate breakout and resource exhaustion hazards, each container runs under five static limits:",
+    )
+    add_bullet(
+        doc,
+        "Network Isolation:",
+        'Configured with network_mode="none". The container has no network interfaces beyond loopback. This blocks outbound command-and-control, data exfiltration, and lateral scans.',
+    )
+    add_bullet(
+        doc,
+        "Memory Boundary:",
+        'Memory consumption is capped at 128 MB (mem_limit="128m"). The Linux kernel terminates any process attempting allocations beyond this ceiling.',
+    )
+    add_bullet(
+        doc,
+        "CPU Quota:",
+        "Throttled to 0.5 logical cores (nano_cpus=500000000) to protect host detection processes from starvation.",
+    )
+    add_bullet(
+        doc,
+        "Capability Revocation:",
+        'All kernel capabilities are stripped (cap_drop=["ALL"]). The container root filesystem is mounted read-only (read_only=True) to prevent file tampering and binary installation.',
+    )
+    add_bullet(
+        doc,
+        "Mount Restrictions:",
+        "No host directories, volumes, or control sockets (/var/run/docker.sock) enter the container.",
     )
 
     add_heading_3(doc, "Concurrency Locks and Execution Lifecycles")
     add_p(
         doc,
-        "Host stability requires strict concurrency control. MimicNet implements a process-level mutual exclusion lock "
-        "(_running = threading.Lock()). Exactly one container session may execute at any given time. Any secondary Alert arriving "
-        "while a session is active is rejected with an EngageBusy exception.",
+        "Single-host deployments require predictable resource boundaries. MimicNet implements an inter-process mutex (_running = threading.Lock()). "
+        "Only one container can run at any given moment. Any incoming Alert during an active session is rejected with an EngageBusy error.",
     )
     add_p(
         doc,
-        "Every session is protected by a 120-second watchdog timer (max_life_s = 120). If an attacker remains connected or "
-        "stalls execution, the runtime forcefully issues SIGKILL to the container and appends a timeout record to the session log. "
-        "In all execution paths (normal exit, timeout, or uncaught exception), a finally block executes container.remove(force=True), "
-        "guaranteeing that no orphaned containers or lingering state remain on the host.",
+        "Each session includes a 120-second watchdog timer (max_life_s = 120). If an attacker halts or stays connected, the runtime sends a SIGKILL "
+        "signal to the container and appends a timeout record to the session log. An exit finally block always executes container.remove(force=True), "
+        "so zero abandoned containers or lingering disk states remain behind.",
     )
 
     add_heading_2(doc, "B. Interactive Emulation and Session Telemetry Capture")
     add_p(
         doc,
-        "Inside the sandbox, MimicNet executes an interactive shell emulator (SshLikeShell) written exclusively in standard "
-        "Python libraries. This avoids external dependencies and permits identical execution in both containerized environments "
-        "and in-process test harnesses.",
+        "Inside the container, MimicNet runs an interactive shell script (SshLikeShell) written in standard Python. It uses no third-party libraries, "
+        "which maintains identical behavior across in-process unit tests and real containers.",
     )
     add_p(
         doc,
-        "The shell displays an authentic initial banner (SSH-like service (lab honeypot, not SSH)) and simulates common UNIX "
-        "utility responses (whoami, id, uname -a, pwd, ls, cat /etc/passwd). Commands are logged as structured JSON objects containing "
-        "timestamps, event types, and payload metadata:\n"
-        "- connect: Records remote attacker IP address, timestamp, and active service banner.\n"
-        "- command: Captures raw input string typed by actor and corresponding emulated stdout reply.\n"
-        "- disconnect: Records clean termination via standard exit commands (exit, logout) or script exhaustion.\n"
-        "- timeout: Appends an explicit timeout marker if session reached maximum duration limit.",
+        "The shell displays an emulated banner (SSH-like service (lab honeypot, not SSH)) and returns canned output for standard UNIX discovery commands "
+        "(whoami, id, uname -a, pwd, ls, cat /etc/passwd). Commands stream to stdout as JSON lines:",
     )
+    add_bullet(
+        doc, "connect:", "Stores the attacker IP address, connection time, and service banner."
+    )
+    add_bullet(doc, "command:", "Logs the exact typed command string and the emulated output.")
+    add_bullet(
+        doc,
+        "disconnect:",
+        "Records session termination through exit, logout, or script completion.",
+    )
+    add_bullet(doc, "timeout:", "Marks sessions terminated by the execution timer.")
 
     add_heading_2(doc, "C. Automated Threat Attribution and MITRE ATT&CK Mapping")
     add_p(
         doc,
-        "Upon session completion, the telemetry log is ingested by tag_events() in eval/mitre.py. The engine matches typed "
-        "command strings against a curated mapping table verified against canonical definitions on attack.mitre.org:\n"
-        "- Strict Input Evaluation: Keyword matching evaluates typed input command lines only. Honeypot output replies are "
-        "ignored during matching, preventing false attributions.\n"
-        "- Evidence Formatting: Every generated tag includes an explicit evidence string citing matched keyword and verification "
-        "date (e.g., command matched user-discovery keyword 'whoami' [2026-11-14]).\n"
-        "- Unverified Fallback: Table entries lacking a verified date are marked Unverified in the evidence string.\n"
-        "- Zero Hallucination Guarantee: Unrecognized commands, non-command events, or syntax errors produce no tags, eliminating synthetic false positives.\n"
-        "- Deduplication: Each technique ID appears at most once per session summary.",
+        "When a session concludes, tag_events() in eval/mitre.py parses the telemetry stream. The mapping table checks inputs against technique definitions "
+        "verified on attack.mitre.org:",
     )
+    add_bullet(
+        doc,
+        "Strict Input Evaluation:",
+        "The engine matches only typed commands. It ignores output text, which prevents false positive tags.",
+    )
+    add_bullet(
+        doc,
+        "Evidence Documentation:",
+        "Every tag records the matching keyword and verification date (for instance, command matched user-discovery keyword 'whoami' [2026-11-14]).",
+    )
+    add_bullet(
+        doc,
+        "Unverified Marker:",
+        "Entries without a verification date carry an Unverified tag in the log.",
+    )
+    add_bullet(
+        doc,
+        "Zero Hallucination:",
+        "Unrecognized commands, errors, and system events receive no tags.",
+    )
+    add_bullet(doc, "Deduplication:", "Each technique ID appears once per session.")
 
     add_heading_2(doc, "D. Closed-Loop Threat Feed and Rule Synthesis Specification")
     add_p(
         doc,
-        "MimicNet transforms captured attacker artifacts into detection rules via rules_from(). The synthesis pipeline extracts "
-        "two primary Indicator of Compromise (IoC) rule formats:\n"
-        '1. Source Address Rules: Targets the network layer, capturing the attacker IP address (match={"src_ip": attacker_ip}).\n'
-        "2. Tunnel Domain Suffix Rules: Scans executed commands for tunneling syntax (such as iodine -f <domain>) and extracts "
-        'the targeted fully qualified domain name (match={"qname_suffix": domain}).',
+        "MimicNet converts session artifacts into operational detection rules using rules_from(). The engine produces two rule types:",
+    )
+    add_bullet(
+        doc,
+        "1. Source Address Rules:",
+        'Targets the network layer by matching the attacker IP (match={"src_ip": attacker_ip}).',
+    )
+    add_bullet(
+        doc,
+        "2. Tunnel Domain Suffix Rules:",
+        'Parses command strings for DNS tunneling tools (such as iodine -f <domain>) to extract target domains (match={"qname_suffix": domain}).',
     )
     add_p(
         doc,
-        "To maintain operational safety (ADR 0006), synthesized rules are created in the proposed state. Rules have no "
-        "operational impact until an analyst inspects and approves them through the console interface. Upon approval, rules "
-        "transition to active and are loaded directly into the CoverTrace detection module. A matching flow immediately produces "
-        "a deterministic detection score of 1.0, bypassing multi-packet statistical accumulation.",
+        "To maintain defensive safety (ADR 0006), synthesized rules default to the proposed state. Rules stay inactive until a security analyst inspects "
+        "and accepts them via the web console. Approved rules become active and load into CoverTrace. A matching flow triggers an immediate detection score "
+        "of 1.0 and bypasses multi-packet observation windows.",
     )
 
     # =========================================================================
@@ -657,8 +724,8 @@ def build_paper2_doc():
         doc,
         text="TABLE I: HONEYPOT SANDBOX AND RUNTIME EXECUTION PARAMETERS",
         align=WD_ALIGN_PARAGRAPH.CENTER,
-        space_before_pt=8,
-        space_after_pt=3,
+        space_before_pt=6,
+        space_after_pt=2.5,
         bold=True,
         font_size_pt=8.5,
         keep_with_next=True,
@@ -721,15 +788,13 @@ def build_paper2_doc():
             t1.rows[r_i].cells[c_i].paragraphs[0].text = val
     format_table(t1, col_w1, col_a1)
 
-    add_p(doc, "", space_before_pt=0, space_after_pt=6)
-
     # TABLE II: Unbreakable Full-Width Table
     p_t2 = add_p(
         doc,
         text="TABLE II: ATTACKER RECONNAISSANCE TRACE AND MITRE ATT&CK MAPPING MATRIX",
         align=WD_ALIGN_PARAGRAPH.CENTER,
-        space_before_pt=8,
-        space_after_pt=3,
+        space_before_pt=7,
+        space_after_pt=2.5,
         bold=True,
         font_size_pt=8.5,
         keep_with_next=True,
@@ -803,15 +868,13 @@ def build_paper2_doc():
             t2.rows[r_i].cells[c_i].paragraphs[0].text = val
     format_table(t2, col_w2, col_a2)
 
-    add_p(doc, "", space_before_pt=0, space_after_pt=8)
-
     # VI. RESULTS AND PERFORMANCE EVALUATION
     add_heading_1(doc, "VI. Results and Performance Evaluation")
     add_heading_2(doc, "A. Sandbox Lifecycle, Concurrency, and Resource Enforcement")
     add_p(
         doc,
-        "We benchmarked MimicNet across two execution paradigms: lightweight in-process emulation (play()) and fully isolated "
-        "container execution (engage()). Table III summarizes latency, throughput, and resource containment over 500 independent trials.",
+        "We benchmarked MimicNet across two execution modes: in-process shell execution (play()) and Docker container execution (engage()). "
+        "Table III summarizes latency, memory, and concurrency metrics across 500 benchmark runs.",
     )
 
     # TABLE III: Unbreakable Full-Width Table
@@ -819,8 +882,8 @@ def build_paper2_doc():
         doc,
         text="TABLE III: RUNTIME BENCHMARK: IN-PROCESS VS. CONTAINERIZED ENGAGEMENT (N=500)",
         align=WD_ALIGN_PARAGRAPH.CENTER,
-        space_before_pt=8,
-        space_after_pt=3,
+        space_before_pt=7,
+        space_after_pt=2.5,
         bold=True,
         font_size_pt=8.5,
         keep_with_next=True,
@@ -883,14 +946,12 @@ def build_paper2_doc():
 
     add_p(
         doc,
-        "The empirical measurements confirm that in-process execution completes in under 0.04 ms, providing an ideal mechanism "
-        "for continuous unit integration testing. Containerized execution incurs an average overhead of 618.40 ms, dominated by "
-        "Docker daemon container creation and namespace configuration. Memory utilization remained well within the 128 MB boundary, "
-        "averaging 18.25 MB under peak execution. When a concurrent alert arrived during an active session, the mutex lock rejected "
-        "the request in 0.0018 ms, preventing host overload. Fig. 1 illustrates the comparative latency distributions across in-process "
-        "and containerized lifecycle stages.",
-        space_before_pt=4,
-        space_after_pt=4,
+        "In-process emulation finishes in under 0.04 ms, which provides a fast target for regression test suites. Containerized execution "
+        "averages 618.40 ms, with most time spent on Docker daemon creation calls and namespace isolation. Peak memory remained low at 18.25 MB, "
+        "well below the 128 MB limit. If a secondary alert arrives while a container runs, the mutex returns an error in 0.0018 ms to protect "
+        "host throughput. Fig. 1 details the execution times across both environments.",
+        space_before_pt=3.5,
+        space_after_pt=3.5,
     )
 
     # FIG 1
@@ -905,11 +966,10 @@ def build_paper2_doc():
     add_heading_2(doc, "B. ATT&CK Attribution Fidelity and Evidence Verification")
     add_p(
         doc,
-        "Evaluating the automated mapping module across 500 runs demonstrated 100% precision and recall on verified commands. "
-        "The scripted attacker sequence yielded six canonical MITRE ATT&CK technique tags (Table II). Crucially, the attribution engine "
-        "successfully avoided false positives: the /bin/sh string in cat /etc/passwd reply was ignored (zero false T1059.004 tags), "
-        "unmapped commands produced zero tags, and MITRE tagging consumed only 0.0151 ms per session. Fig. 3 confirms the attribution "
-        "precision across verified techniques and negative control baselines.",
+        "Testing the attribution module on 500 runs yielded consistent technique matching with zero false positives. The test script produced "
+        "six verified technique tags (Table II). Negative controls confirmed the specificity of the matcher: the /bin/sh shell path in the "
+        "cat /etc/passwd reply produced zero tags for T1059.004 because the matcher scans input commands only. Unregistered inputs generated zero "
+        "tags, and keyword matching required only 0.0151 ms per session. Fig. 3 shows technique precision across positive detections and negative control tests.",
     )
 
     # FIG 3
@@ -924,9 +984,8 @@ def build_paper2_doc():
     add_heading_2(doc, "C. Closed-Loop Feedback Acceleration: Statistical vs. Rule-Based Detection")
     add_p(
         doc,
-        "A central hypothesis of the Operation Cactus architecture is that automated rule synthesis accelerates threat re-detection "
-        "compared to passive statistical classification. We evaluated detection latency on replayed DNS tunnel PCAPs before and "
-        "after rule synthesis.",
+        "Operation Cactus uses honeypot session data to speed up subsequent detections. We compared detection times on replayed PCAP files before "
+        "and after loading synthesized rules.",
     )
 
     # TABLE IV: Unbreakable Full-Width Table
@@ -934,8 +993,8 @@ def build_paper2_doc():
         doc,
         text="TABLE IV: CLOSED-LOOP DETECTION LATENCY AND RULE EXTRACTION METRICS",
         align=WD_ALIGN_PARAGRAPH.CENTER,
-        space_before_pt=8,
-        space_after_pt=3,
+        space_before_pt=7,
+        space_after_pt=2.5,
         bold=True,
         font_size_pt=8.5,
         keep_with_next=True,
@@ -1001,12 +1060,11 @@ def build_paper2_doc():
 
     add_p(
         doc,
-        "As shown in Table IV, statistical detection requires observing traffic across a sliding temporal window (16 packets for DNS "
-        "entropy; 24 packets for FlowSight flow cadence). In contrast, once an analyst approves a synthesized rule, CoverTrace flags "
-        "matching traffic on the very first packet. Algorithmic detection delay drops from 14.20 seconds down to 0.00 ms, converting "
-        "a slow covert channel into an immediate deterministic alert. Fig. 2 plots the packet and temporal reductions achieved by closed-loop feedback.",
-        space_before_pt=4,
-        space_after_pt=4,
+        "Statistical scoring requires collecting packets over temporal windows: 16 packets for DNS entropy and 24 packets for FlowSight burst tracking. "
+        "When an analyst promotes an extracted rule to active status, CoverTrace flags matching flows on the very first packet. Delay drops from 14.20 "
+        "seconds to 0.00 ms. This converts statistical anomaly detection into deterministic rule hits. Fig. 2 illustrates this reduction in detection latency.",
+        space_before_pt=3.5,
+        space_after_pt=3.5,
     )
 
     # FIG 2
@@ -1025,75 +1083,79 @@ def build_paper2_doc():
     set_cols(sec3, num_cols=2, space_dxa=432)
 
     add_heading_2(doc, "D. Ablation Analysis & Deception Fingerprint Resilience")
-    add_p(
+    add_p(doc, "We evaluated individual deception controls through ablation tests:")
+    add_bullet(
         doc,
-        "We conducted ablation tests on deception components to evaluate system resilience:\n"
-        "1. Watchdog Timeout Ablation: When the attacker script omitted an exit command, the unconstrained shell remained connected "
-        "indefinitely. Re-enabling the 120-second watchdog successfully issued SIGKILL and cleanly logged the session with a timeout "
-        "event in 100% of trials.\n"
-        "2. Banner Variation: Exposing a fixed, static service banner enables attackers to profile the honeypot using automated "
-        "network scanners. Implementing a seeded three-way banner selection cycle disrupted signature-based honeypot detection tools "
-        "without modifying internal command parsing.\n"
-        "3. Analyst Gate Ablation: Bypassing analyst approval to automatically activate synthesized rules led to a simulated rule "
-        "conflict when a benign web domain was introduced. Requiring explicit analyst approval prevented rule poisoning while "
-        "maintaining a rapid synthesis-to-deployment workflow.",
+        "1. Watchdog Timer Ablation:",
+        "Removing the timer let stalled shells run indefinitely. Restoring the 120-second watchdog triggered SIGKILL and logged a timeout event in every run.",
+    )
+    add_bullet(
+        doc,
+        "2. Banner Variation:",
+        "Static service banners allow scanners to identify honeypots quickly. Rotating across three seeded banners varied service fingerprints while keeping command parsing stable.",
+    )
+    add_bullet(
+        doc,
+        "3. Analyst Gate Ablation:",
+        "Bypassing analyst approval allowed a test rule with a common web domain to activate automatically and trigger false alarms. Retaining the approval gate stopped rule conflicts while keeping rule generation fast.",
     )
 
     add_heading_2(doc, "E. Uncertainty Quantification: Repeated Seeds")
     add_p(
         doc,
-        "Across 10 distinct random seeds (seeds 42 through 51) controlling testbed jitter and session timing, performance remained consistent:\n"
-        "- In-process execution latency: 0.0392 ± 0.0078 ms.\n"
-        "- MITRE ATT&CK mapping latency: 0.0151 ± 0.0014 ms.\n"
-        "- Proposed rule synthesis latency: 0.0053 ± 0.0007 ms.\n"
-        "- Combined pipeline processing overhead: 0.0544 ± 0.0085 ms.\n"
-        "- Sandbox container teardown success rate: 100.0% (500 out of 500 containers destroyed).",
+        "Across 10 random seeds (seeds 42 to 51) controlling network jitter and timestamps, performance remained stable:",
+    )
+    add_bullet(doc, "In-process execution latency:", "0.0392 ± 0.0078 ms.")
+    add_bullet(doc, "MITRE ATT&CK mapping latency:", "0.0151 ± 0.0014 ms.")
+    add_bullet(doc, "Candidate rule synthesis latency:", "0.0053 ± 0.0007 ms.")
+    add_bullet(doc, "Combined pipeline processing time:", "0.0544 ± 0.0085 ms.")
+    add_bullet(
+        doc, "Container cleanup success rate:", "100.0% (500 out of 500 containers destroyed)."
     )
 
     add_heading_2(doc, "F. Threats to Validity")
-    add_p(
+    add_p(doc, "Three constraints apply to these experimental results:")
+    add_bullet(
         doc,
-        "Several experimental limitations apply to this evaluation:\n"
-        "- Synthetic Scripted Attacker: In compliance with ethical research guidelines and team safety protocols, tests utilized "
-        "scripted adversary sequences instead of live external hackers. While the commands mirror standard offensive tradecraft "
-        "(whoami, uname, iodine), sophisticated human adversaries may attempt atypical shell escapes or timing probes.\n"
-        "- Single-Host Scalability: MimicNet enforces a strict concurrency ceiling of one container per host. While this prevents "
-        "host resource exhaustion, an adversary coordinating distributed attacks across hundreds of endpoints would cause secondary "
-        "alerts to receive EngageBusy rejections.\n"
-        "- Service Emulation Scope: The current shell emulator models POSIX shell commands and SSH banners. Protocols like SMB, RDP, "
-        "or HTTP web shells are not currently supported.",
+        "Scripted Adversary Sequences:",
+        "Tests used automated command scripts instead of human adversaries. Real attackers may use alternative shell escapes or subtle timing checks.",
+    )
+    add_bullet(
+        doc,
+        "Single-Container Limit:",
+        "The single-instance lock prevents resource starvation, but distributed attacks across multiple endpoints will see secondary sessions rejected with EngageBusy.",
+    )
+    add_bullet(
+        doc,
+        "Emulation Boundaries:",
+        "The shell supports common POSIX and SSH commands. Web shells, database protocols, and SMB sessions are currently outside its scope.",
     )
 
     add_heading_2(doc, "G. Interpretation and Operational Trade-offs")
     add_p(
         doc,
-        "The benchmark results establish that active deception does not require heavy, complex virtualization infrastructure. By "
-        "constraining the honeypot to a 128 MB container with no network access, MimicNet eliminates operational liability while "
-        "gathering high-fidelity threat intelligence.",
+        "These benchmarks show that high-interaction deception does not require heavy hypervisor infrastructure. Setting strict 128 MB RAM limits "
+        "and detaching network namespaces removes host risks while capturing clean command logs.",
     )
     add_p(
         doc,
-        "Furthermore, diverting flagged traffic into a honeypot provides an operational safety net for detection thresholds. Because "
-        "false positives do not result in dropped user connections, security teams can tune detection modules toward higher "
-        "sensitivity without increasing help-desk ticket volumes.",
+        "Diverting suspect traffic into decoys also softens detection trade-offs. Because false alarms do not terminate active sessions, engineering "
+        "teams can lower detection thresholds without triggering service outages for valid users.",
     )
 
     # VII. CONCLUSION AND FUTURE WORK
     add_heading_1(doc, "VII. Conclusion and Future Work")
     add_p(
         doc,
-        "This paper presents the formal specification, containment model, and performance evaluation of MimicNet, the active deception "
-        'subsystem of Operation Cactus. By combining strict container constraints (network_mode="none", 128 MB RAM ceiling, 0.5 CPU '
-        "quota, complete capability dropping) with lightweight shell emulation, MimicNet captures adversary command sequences without "
-        "compromising host safety. The integrated attribution engine maps session events to verified MITRE ATT&CK techniques in 0.0151 ms "
-        "with zero false attribution on unmapped inputs. Closed-loop rule synthesis converts observed artifacts into proposed detection "
-        "filters, cutting re-detection latency from multi-packet sliding statistical windows down to single-packet deterministic matching (0 ms delay).",
+        "This paper evaluates the architecture, containment rules, and telemetry pipeline of MimicNet. Combining strict container restrictions "
+        '(network_mode="none", 128 MB RAM cap, 0.5 CPU quota, dropped capabilities) with shell emulation captures adversary activity safely. The keyword '
+        "parser maps commands to MITRE ATT&CK techniques in 0.0151 ms with zero false attribution on negative controls. Analyst-reviewed rule generation "
+        "turns session data into CoverTrace filters. This cuts re-detection delay from sliding statistical windows down to single-packet matches (0 ms algorithmic delay).",
     )
     add_p(
         doc,
-        "Future work in Phase II will expand MimicNet to support multi-protocol emulation (HTTP, DNS responders), investigate dynamic "
-        "deception banner randomization against advanced scanner fingerprinting, and integrate live container telemetry directly into "
-        "the React-based security dashboard.",
+        "Phase II development will add web and DNS protocol handlers, dynamic banner randomization against automated profiling tools, and telemetry "
+        "streaming into the central web dashboard.",
     )
 
     # REFERENCES
@@ -1106,15 +1168,15 @@ def build_paper2_doc():
         '[5] T. Bui, "Analysis of Docker Security," Aalto University School of Science, Espoo, Finland, Research Report, 2015.',
         '[6] A. Al-Daeef, N. Basir, and M. Saudi, "Security Vulnerabilities in Docker Containers: A Survey," IEEE Access, vol. 9, pp. 136594–136611, 2021.',
         '[7] J. Krupski, W. Graniszewski, and K. Szczypiorski, "StegShield: Information Hiding Detection Using Deceptive Techniques," IEEE Transactions on Information Forensics and Security, vol. 16, pp. 3201–3214, 2021.',
-        '[8] A. Rathod, S. Khan, S. Tripathi, B. Moray, G. Deepak, and S. Ranjan, "Operation Cactus: Behavioral Traffic Analysis and Covert Channel Detection for Encrypted Network Threats," in Proc. Baseline Benchmark Review, Bengaluru, India, 2026.',
+        '[8] A. Rathod, S. Khan, S. Tripathi, B. Moray, Gerard Deepak, and S. Ranjan, "Operation Cactus: Behavioral Traffic Analysis and Covert Channel Detection for Encrypted Network Threats," in Proc. Baseline Benchmark Review, Bengaluru, India, 2026.',
     ]
     for r in refs:
         p_ref = add_p(
             doc,
             text=r,
             align=WD_ALIGN_PARAGRAPH.JUSTIFY,
-            space_before_pt=2,
-            space_after_pt=3,
+            space_before_pt=1.5,
+            space_after_pt=2.5,
             font_size_pt=8.5,
         )
         p_ref.paragraph_format.left_indent = Inches(0.2)
