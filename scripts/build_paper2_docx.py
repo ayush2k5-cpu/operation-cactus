@@ -90,6 +90,18 @@ def make_table_unbreakable(table):
                 p.paragraph_format.keep_with_next = True
 
 
+def set_drawing_extent(p, cx_in: float, cy_in: float):
+    """Set explicit display dimensions for an embedded drawing in inches."""
+    cx_emu = int(cx_in * 914400)
+    cy_emu = int(cy_in * 914400)
+    for ext in p._p.xpath('.//*[local-name()="extent"]'):
+        ext.set("cx", str(cx_emu))
+        ext.set("cy", str(cy_emu))
+    for ext in p._p.xpath('.//*[local-name()="ext"]'):
+        ext.set("cx", str(cx_emu))
+        ext.set("cy", str(cy_emu))
+
+
 def build_paper2():
     print(f"Loading template from: {TEMPLATE_DOCX}")
     doc = Document(str(TEMPLATE_DOCX))
@@ -100,6 +112,7 @@ def build_paper2():
     if FIG1_PATH.exists():
         print("Updating Figure 1 blob...")
         doc.part.rels["rId7"].target_part._blob = FIG1_PATH.read_bytes()
+        set_drawing_extent(doc.paragraphs[53], cx_in=6.20, cy_in=2.40)
     if FIG2_PATH.exists():
         print("Updating Figure 2 blob...")
         doc.part.rels["rId8"].target_part._blob = FIG2_PATH.read_bytes()
@@ -589,6 +602,8 @@ def build_paper2():
 
     # T[8] update: Figure 2 & 3 captions in cell 0 and cell 1
     t8 = doc.tables[8]
+    set_drawing_extent(t8.rows[0].cells[0].paragraphs[0], cx_in=3.20, cy_in=2.45)
+    set_drawing_extent(t8.rows[0].cells[1].paragraphs[0], cx_in=3.20, cy_in=2.45)
     # Cell 0 caption (paragraph 1)
     if len(t8.rows[0].cells[0].paragraphs) > 1:
         p_c0 = t8.rows[0].cells[0].paragraphs[1]
