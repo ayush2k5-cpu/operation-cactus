@@ -16,7 +16,7 @@ from backend.gkmkb.pipeline import default_detectors, stream
 from backend.gkmkb.settings import load_settings
 from backend.gkmkb.storage import CloseResult, ReplayRecord, ReplayState, StorageBase
 from capture.replay import ReplaySource
-from contracts.models import Alert, Detection, HoneypotSession
+from contracts.models import Alert, Detection, HoneypotSession, Rule
 
 _LIST_DEFAULT = 50
 _LIST_MAX = 500
@@ -113,7 +113,10 @@ def create_app(
             with _active_gate_lock:
                 _active_gate.clear()
                 _active_gate.append(gate)
-            for event in stream(counted(), default_detectors(window), gate, replay_id):
+            active_rules = store.list_rules(status="active")
+            for event in stream(
+                counted(), default_detectors(window, rules=active_rules), gate, replay_id
+            ):
                 if isinstance(event, Alert):
                     store.save_alert(event, replay_id)
                     alerts += 1
@@ -234,7 +237,53 @@ def create_app(
         """Push one session event to all connected WebSocket clients."""
         hub.publish({"type": "session_event", "session_id": session_id, "data": event})
 
+    def publish_rule(rule: Rule) -> None:
+        """Push one rule message to all connected WebSocket clients."""
+        hub.publish({"type": "rule", "data": rule.model_dump(mode="json")})
+
     app.state.publish_session_event = publish_session_event
+    app.state.publish_rule = publish_rule
+
+    @app.get("/api/rules", response_model=list[Rule])
+    def list_rules(status: str | None = None, limit: int = _LIST_DEFAULT) -> list[dict]:
+        limit = min(limit, _LIST_MAX)
+        return [r.model_dump(mode="json") for r in store.list_rules(status=status, limit=limit)]
+
+    @app.post("/api/rules", response_model=Rule, status_code=201)
+    def create_rule(rule: Rule) -> dict:
+        store.save_rule(rule)
+        publish_rule(rule)
+        return rule.model_dump(mode="json")
+
+    @app.post("/api/rules/{rule_id}/approve", response_model=Rule)
+    def approve_rule(rule_id: str) -> dict:
+        rule = store.get_rule(rule_id)
+        if rule is None:
+            raise HTTPException(404, "rule not found")
+        if rule.status != "proposed":
+            raise HTTPException(
+                409, f"cannot approve rule in '{rule.status}' status; must be 'proposed'"
+            )
+        updated = store.update_rule_status(rule_id, "active")
+        if updated is None:
+            raise HTTPException(404, "rule not found")
+        publish_rule(updated)
+        return updated.model_dump(mode="json")
+
+    @app.post("/api/rules/{rule_id}/reject", response_model=Rule)
+    def reject_rule(rule_id: str) -> dict:
+        rule = store.get_rule(rule_id)
+        if rule is None:
+            raise HTTPException(404, "rule not found")
+        if rule.status != "proposed":
+            raise HTTPException(
+                409, f"cannot reject rule in '{rule.status}' status; must be 'proposed'"
+            )
+        updated = store.update_rule_status(rule_id, "rejected")
+        if updated is None:
+            raise HTTPException(404, "rule not found")
+        publish_rule(updated)
+        return updated.model_dump(mode="json")
 
     @app.websocket("/ws/events")
     async def events(ws: WebSocket) -> None:

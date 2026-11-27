@@ -15,7 +15,7 @@ from enum import Enum
 
 from pydantic import BaseModel
 
-from contracts.models import Alert, Detection, HoneypotSession
+from contracts.models import Alert, Detection, HoneypotSession, Rule
 
 
 class ReplayState(str, Enum):
@@ -111,6 +111,27 @@ class StorageBase(ABC):
     def get_session(self, session_id: str) -> HoneypotSession | None:
         """Return one HoneypotSession by id, or None if not found."""
 
+    @abstractmethod
+    def save_rule(self, rule: Rule) -> None:
+        """Insert or replace a Rule."""
+
+    @abstractmethod
+    def get_rule(self, rule_id: str) -> Rule | None:
+        """Return one Rule by id, or None if not found."""
+
+    @abstractmethod
+    def list_rules(
+        self,
+        *,
+        status: str | None = None,
+        limit: int = 50,
+    ) -> list[Rule]:
+        """Return Rules, newest first, optionally filtered by status."""
+
+    @abstractmethod
+    def update_rule_status(self, rule_id: str, status: str) -> Rule | None:
+        """Update a Rule's status and return the updated Rule, or None if not found."""
+
 
 class MemoryStore(StorageBase):
     """In-memory store. No I/O, no dependencies. Safe to use in every test."""
@@ -121,6 +142,8 @@ class MemoryStore(StorageBase):
         self._detections: list[tuple[Detection, str]] = []
         self._alerts: list[tuple[Alert, str]] = []
         self._sessions: dict[str, HoneypotSession] = {}
+        self._rules: dict[str, Rule] = {}
+        self._rule_order: list[str] = []
 
     def save_replay(self, record: ReplayRecord) -> None:
         if record.replay_id not in self._replays:
@@ -191,6 +214,33 @@ class MemoryStore(StorageBase):
     def get_session(self, session_id: str) -> HoneypotSession | None:
         return self._sessions.get(session_id)
 
+    def save_rule(self, rule: Rule) -> None:
+        if rule.rule_id not in self._rules:
+            self._rule_order.append(rule.rule_id)
+        self._rules[rule.rule_id] = rule
+
+    def get_rule(self, rule_id: str) -> Rule | None:
+        return self._rules.get(rule_id)
+
+    def list_rules(
+        self,
+        *,
+        status: str | None = None,
+        limit: int = 50,
+    ) -> list[Rule]:
+        ordered = [self._rules[rid] for rid in reversed(self._rule_order)]
+        if status is not None:
+            ordered = [r for r in ordered if r.status == status]
+        return ordered[:limit]
+
+    def update_rule_status(self, rule_id: str, status: str) -> Rule | None:
+        rule = self._rules.get(rule_id)
+        if rule is None:
+            return None
+        updated = rule.model_copy(update={"status": status})
+        self._rules[rule_id] = updated
+        return updated
+
 
 class MongoStore(StorageBase):
     """MongoDB-backed store (ADR 0005). Requires a running mongod.
@@ -208,12 +258,15 @@ class MongoStore(StorageBase):
         self._detections_col = db["detections"]
         self._alerts_col = db["alerts"]
         self._sessions_col = db["sessions"]
+        self._rules_col = db["rules"]
         self._replays_col.create_index([("started", pymongo.DESCENDING)])
         self._detections_col.create_index([("ts", pymongo.DESCENDING)])
         self._detections_col.create_index("replay_id")
         self._alerts_col.create_index([("ts", pymongo.DESCENDING)])
         self._alerts_col.create_index("replay_id")
         self._sessions_col.create_index("session_id", unique=True)
+        self._rules_col.create_index("rule_id", unique=True)
+        self._rules_col.create_index("status")
 
     def close(self) -> None:
         self._client.close()
@@ -295,3 +348,33 @@ class MongoStore(StorageBase):
         if doc is None:
             return None
         return HoneypotSession.model_validate(doc)
+
+    def save_rule(self, rule: Rule) -> None:
+        doc = rule.model_dump(mode="json")
+        self._rules_col.replace_one({"rule_id": rule.rule_id}, doc, upsert=True)
+
+    def get_rule(self, rule_id: str) -> Rule | None:
+        doc = self._rules_col.find_one({"rule_id": rule_id}, {"_id": 0})
+        if doc is None:
+            return None
+        return Rule.model_validate(doc)
+
+    def list_rules(
+        self,
+        *,
+        status: str | None = None,
+        limit: int = 50,
+    ) -> list[Rule]:
+        filt: dict[str, object] = {}
+        if status is not None:
+            filt["status"] = status
+        cursor = self._rules_col.find(filt, {"_id": 0}).limit(limit)
+        return [Rule.model_validate(doc) for doc in cursor]
+
+    def update_rule_status(self, rule_id: str, status: str) -> Rule | None:
+        doc = self._rules_col.find_one({"rule_id": rule_id}, {"_id": 0})
+        if doc is None:
+            return None
+        self._rules_col.update_one({"rule_id": rule_id}, {"$set": {"status": status}})
+        doc["status"] = status
+        return Rule.model_validate(doc)

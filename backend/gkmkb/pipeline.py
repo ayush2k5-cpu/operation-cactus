@@ -8,7 +8,7 @@ from uuid import uuid4
 from backend.gkmkb.gate import Gate
 from backend.gkmkb.settings import load_settings
 from capture.replay import ReplaySource
-from contracts.models import Alert, Detection, FlowRecord
+from contracts.models import Alert, Detection, FlowRecord, Rule
 from covertrace.detector import CoverTrace, load_config
 from flowsight.detector import FlowSight, FlowSightConfig
 
@@ -20,11 +20,14 @@ class Result:
     alerts: list[Alert] = field(default_factory=list)
 
 
-def default_detectors(window_seconds: float) -> list:
+def default_detectors(window_seconds: float, rules: list[Rule] | None = None) -> list:
     """Fresh detectors for one replay."""
+    ct = CoverTrace(replace(load_config(), window_seconds=window_seconds))
+    if rules:
+        ct.load_rules(rules)
     return [
         FlowSight(FlowSightConfig(window_seconds=window_seconds)),
-        CoverTrace(replace(load_config(), window_seconds=window_seconds)),
+        ct,
     ]
 
 
@@ -55,6 +58,7 @@ def run(
     threshold: float | None = None,
     detectors: list | None = None,
     replay_id: str | None = None,
+    rules: list[Rule] | None = None,
 ) -> Result:
     """Replay a pcap with a fresh Gate and fresh detectors; collect the stream."""
     settings = load_settings()
@@ -69,7 +73,7 @@ def run(
 
     events = stream(
         counted(),
-        default_detectors(window) if detectors is None else detectors,
+        default_detectors(window, rules=rules) if detectors is None else detectors,
         Gate(window_seconds=window, threshold=level),
         replay_id or uuid4().hex[:8],
     )

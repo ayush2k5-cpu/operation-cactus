@@ -1,4 +1,4 @@
-import type { Alert, Detection } from "./client";
+import type { Alert, Detection, Rule, SessionEvent } from "./client";
 
 export type ReplayDone = {
   state: "done" | "failed";
@@ -13,7 +13,9 @@ export type LiveMessage =
   | { type: "alert"; replay_id: string; data: Alert }
   | { type: "replay_done"; replay_id: string; data: ReplayDone }
   | { type: "alert_engaged"; replay_id: string; data: { alert_id: string; session_id: string } }
-  | { type: "session_failed"; replay_id: string; data: { alert_id: string; error: string } };
+  | { type: "session_failed"; replay_id: string; data: { alert_id: string; error: string } }
+  | { type: "session_event"; session_id: string; data: SessionEvent }
+  | { type: "rule"; data: Rule };
 
 export type Replay = {
   id: string;
@@ -27,10 +29,19 @@ export type Feed = {
   replay: Replay | null;
   detections: Detection[];
   alerts: Alert[];
+  rules: Rule[];
   notice: string | null;
+  sessionEvents: Record<string, SessionEvent[]>;
 };
 
-export const emptyFeed: Feed = { replay: null, detections: [], alerts: [], notice: null };
+export const emptyFeed: Feed = {
+  replay: null,
+  detections: [],
+  alerts: [],
+  rules: [],
+  notice: null,
+  sessionEvents: {},
+};
 
 function mergeById<T>(items: T[], incoming: T[], id: (item: T) => string): T[] {
   const seen = new Set(items.map(id));
@@ -52,7 +63,9 @@ export function mergeHistory(
     replay: finished ? feed.replay : replay,
     detections: mergeById(same ? feed.detections : [], detections, detectionId),
     alerts: mergeById(same ? feed.alerts : [], alerts, alertId),
+    rules: same ? feed.rules : [],
     notice: same ? feed.notice : null,
+    sessionEvents: same ? feed.sessionEvents : {},
   };
 }
 
@@ -64,14 +77,48 @@ export function startFeed(feed: Feed, id: string, pcap: string | null): Feed {
     replay: { id, pcap, state: "running", error: null, counts: null },
     detections: same ? feed.detections : [],
     alerts: same ? feed.alerts : [],
+    rules: same ? feed.rules : [],
     notice: same ? feed.notice : null,
+    sessionEvents: same ? feed.sessionEvents : {},
   };
 }
 
 // The single handler for every live message. Unknown types are ignored.
 export function applyMessage(feed: Feed, msg: LiveMessage): Feed {
-  const known = ["detection", "alert", "replay_done", "alert_engaged", "session_failed"];
+  const known = [
+    "detection",
+    "alert",
+    "replay_done",
+    "alert_engaged",
+    "session_failed",
+    "session_event",
+    "rule",
+  ];
   if (!known.includes(msg.type)) return feed;
+  if (msg.type === "session_event") {
+    const list = feed.sessionEvents[msg.session_id] ?? [];
+    return {
+      ...feed,
+      sessionEvents: {
+        ...feed.sessionEvents,
+        [msg.session_id]: [...list, msg.data],
+      },
+    };
+  }
+  if (msg.type === "rule") {
+    const existingIndex = feed.rules.findIndex((r) => r.rule_id === msg.data.rule_id);
+    let updatedRules: Rule[];
+    if (existingIndex >= 0) {
+      updatedRules = [...feed.rules];
+      updatedRules[existingIndex] = msg.data;
+    } else {
+      updatedRules = [...feed.rules, msg.data];
+    }
+    return {
+      ...feed,
+      rules: updatedRules,
+    };
+  }
   const base = feed.replay?.id === msg.replay_id ? feed : startFeed(emptyFeed, msg.replay_id, null);
   const replay = base.replay!;
   switch (msg.type) {
