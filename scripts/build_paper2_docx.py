@@ -327,12 +327,12 @@ def build_paper2_doc():
     tblPr_auth = t_auth._tbl.tblPr
     borders_auth = parse_xml(
         f"<w:tblBorders {nsdecls('w')}>"
-        '<w:top w:val="single" w:sz="4" w:space="0" w:color="auto"/>'
-        '<w:left w:val="single" w:sz="4" w:space="0" w:color="auto"/>'
-        '<w:bottom w:val="single" w:sz="4" w:space="0" w:color="auto"/>'
-        '<w:right w:val="single" w:sz="4" w:space="0" w:color="auto"/>'
-        '<w:insideH w:val="single" w:sz="4" w:space="0" w:color="auto"/>'
-        '<w:insideV w:val="single" w:sz="4" w:space="0" w:color="auto"/>'
+        '<w:top w:val="none"/>'
+        '<w:left w:val="none"/>'
+        '<w:bottom w:val="none"/>'
+        '<w:right w:val="none"/>'
+        '<w:insideH w:val="none"/>'
+        '<w:insideV w:val="none"/>'
         "</w:tblBorders>"
     )
     tblPr_auth.append(borders_auth)
